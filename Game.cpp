@@ -41,9 +41,9 @@ Game::Game(HINSTANCE hInstance)
 // --------------------------------------------------------
 Game::~Game()
 {
-	delete shape1;
-	//delete shape2;
-	//delete shape3;
+	delete triangleShape;
+	delete squareShape;
+	delete houseShape;
 }
 
 // --------------------------------------------------------
@@ -149,18 +149,13 @@ void Game::CreateBasicGeometry()
 	XMFLOAT4 green = XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f);
 	XMFLOAT4 blue = XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f);
 
-	// Set up the vertices of the triangle we would like to draw
-	// - We're going to copy this array, exactly as it exists in memory
-	//    over to a DirectX-controlled data structure (the vertex buffer)
-	// - Note: Since we don't have a camera or really any concept of
-	//    a "3d world" yet, we're simply describing positions within the
-	//    bounds of how the rasterizer sees our screen: [-1 to +1] on X and Y
-	// - This means (0,0) is at the very center of the screen.
-	// - These are known as "Normalized Device Coordinates" or "Homogeneous 
-	//    Screen Coords", which are ways to describe a position without
-	//    knowing the exact size (in pixels) of the image/window/etc.  
-	// - Long story short: Resizing the window also resizes the triangle,
-	//    since we're describing the triangle in terms of the window itself
+	// Unity Shader Error color
+	XMFLOAT4 pink = XMFLOAT4(1.0f, 0.f, 0.4f, 1.0f);
+
+	// XBA Shader Error color
+	XMFLOAT4 brightBlue = XMFLOAT4(0.0f, 1.0f, 1.0f, 1.0f);
+	
+	
 	Vertex vertices[] =
 	{
 		{ XMFLOAT3(+0.0f, +0.2f, +0.0f), red },
@@ -168,14 +163,32 @@ void Game::CreateBasicGeometry()
 		{ XMFLOAT3(-0.2f, -0.2f, +0.0f), green },
 	};
 
-	// Set up the indices, which tell us which vertices to use and in which order
-	// - This is somewhat redundant for just 3 vertices (it's a simple example)
-	// - Indices are technically not required if the vertices are in the buffer 
-	//    in the correct order and each one will be used exactly once
-	// - But just to see how it's done...
-	unsigned int indices[] = { 0, 1, 2 };
+	Vertex vertices2[] =
+	{
+		{ XMFLOAT3(-0.6f, 0.6f, +0.0f), pink },
+		{ XMFLOAT3(-0.4f, 0.6f, +0.0f), blue },
+		{ XMFLOAT3(-0.4f, -0.6f, +0.0f), brightBlue },
+		{ XMFLOAT3(-0.6f, -0.6f, +0.0f), pink }
+	};
 
-	shape1 = new Mesh(vertices, 3, indices, 3, device.Get());
+	Vertex vertices3[] =
+	{
+		{ XMFLOAT3(0.6f, 0.8f, +0.0f), pink },
+		{ XMFLOAT3(0.85f, 0.5f, +0.0f), blue },
+		{ XMFLOAT3(0.35f, 0.5f, +0.0f), brightBlue },
+		{ XMFLOAT3(0.85f, 0.f, +0.0f), pink },
+		{ XMFLOAT3(0.6f, 0.f, +0.0f), green },
+		{ XMFLOAT3(0.35f, 0.f, +0.0f), red }
+	};
+	
+	
+	unsigned int indices[] = { 0, 1, 2 };
+	unsigned int indices2[] = { 0, 1, 2, 0, 2, 3 };
+	unsigned int indices3[] = { 0, 1, 2, 1, 3, 4, 2, 1, 4, 2, 4, 5 };
+	
+	triangleShape = new Mesh(vertices, 3, indices, 3, device.Get());
+	squareShape = new Mesh(vertices2, 4, indices2, 6, device.Get());
+	houseShape = new Mesh(vertices3, 6, indices3, 12, device.Get());
 }
 
 
@@ -242,20 +255,30 @@ void Game::Draw(float deltaTime, float totalTime)
 	//    in a larger application/game
 	UINT stride = sizeof(Vertex);
 	UINT offset = 0;
-	context->IASetVertexBuffers(0, 1, shape1->GetVertexBuffer(), &stride, &offset);
-	context->IASetIndexBuffer(shape1->GetIndexBuffer(), DXGI_FORMAT_R32_UINT, 0);
 
-	// Finally do the actual drawing
-	//  - Do this ONCE PER OBJECT you intend to draw
-	//  - This will use all of the currently set DirectX "stuff" (shaders, buffers, etc)
-	//  - DrawIndexed() uses the currently set INDEX BUFFER to look up corresponding
-	//     vertices in the currently set VERTEX BUFFER
+	// Draw a triangle
+	context->IASetVertexBuffers(0, 1, triangleShape->GetVertexBuffer(), &stride, &offset);
+	context->IASetIndexBuffer(triangleShape->GetIndexBuffer(), DXGI_FORMAT_R32_UINT, 0);
 	context->DrawIndexed(
-		shape1->GetIndexCount(),     // The number of indices to use (we could draw a subset if we wanted)
-		0,     // Offset to the first index we want to use
-		0);    // Offset to add to each index when looking up vertices
+		triangleShape->GetIndexCount(),     
+		0,  
+		0); 
 
+	// Draw a square
+	context->IASetVertexBuffers(0, 1, squareShape->GetVertexBuffer(), &stride, &offset);
+	context->IASetIndexBuffer(squareShape->GetIndexBuffer(), DXGI_FORMAT_R32_UINT, 0);
+	context->DrawIndexed(
+		squareShape->GetIndexCount(),
+		0, 
+		0);
 
+	// Draw a house
+	context->IASetVertexBuffers(0, 1, houseShape->GetVertexBuffer(), &stride, &offset);
+	context->IASetIndexBuffer(houseShape->GetIndexBuffer(), DXGI_FORMAT_R32_UINT, 0);
+	context->DrawIndexed(
+		houseShape->GetIndexCount(),
+		0, 
+		0);
 
 	// Present the back buffer to the user
 	//  - Puts the final frame we're drawing into the window so the user can see it
