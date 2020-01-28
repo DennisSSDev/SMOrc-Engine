@@ -1,6 +1,7 @@
 #include "Game.h"
 #include "Vertex.h"
 #include "Mesh.h"
+#include "BufferStructs.h"
 
 // Needed for a helper function to read compiled shader files from the hard drive
 #pragma comment(lib, "d3dcompiler.lib")
@@ -57,6 +58,25 @@ void Game::Init()
 	//  - You'll be expanding and/or replacing these later
 	LoadShaders();
 	CreateBasicGeometry();
+
+	if(device) 
+	{
+		unsigned int size = sizeof(VertexShaderExternalData); 
+		size = (size + 15) / 16 * 16;
+		
+		// Describe the constant buffer
+		D3D11_BUFFER_DESC cbDesc = {}; 
+		
+		// Sets struct to all zeros 
+		cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER; 
+		cbDesc.ByteWidth = size; 
+
+		// Must be a multiple of 16
+		cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE; 
+		cbDesc.Usage = D3D11_USAGE_DYNAMIC; 
+
+		device->CreateBuffer(&cbDesc, 0, constantBufferVS.GetAddressOf());
+	}
 
 	// Tell the input assembler stage of the pipeline what kind of
 	// geometric primitives (points, lines or triangles) we want to draw.  
@@ -246,6 +266,17 @@ void Game::Draw(float deltaTime, float totalTime)
 	// - However, this isn't always the case (but might be for this course)
 	context->IASetInputLayout(inputLayout.Get());
 
+	VertexShaderExternalData vsData;
+	
+	vsData.colorTint = XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f);
+	vsData.offset = XMFLOAT3(0.25f, 0.0f, 0.0f);
+
+	D3D11_MAPPED_SUBRESOURCE mappedBuffer = {};    
+	context->Map(constantBufferVS.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedBuffer);      
+	memcpy(mappedBuffer.pData, &vsData, sizeof(vsData));      
+	context->Unmap(constantBufferVS.Get(), 0);
+
+	 context->VSSetConstantBuffers( 0, 1, constantBufferVS.GetAddressOf());
 
 	// Set buffers in the input assembler
 	//  - Do this ONCE PER OBJECT you're drawing, since each object might
