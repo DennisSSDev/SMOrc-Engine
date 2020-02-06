@@ -1,6 +1,7 @@
 #include "Game.h"
 #include "Vertex.h"
 #include "Mesh.h"
+#include "Entity.h"
 #include "BufferStructs.h"
 
 // Needed for a helper function to read compiled shader files from the hard drive
@@ -42,6 +43,12 @@ Game::Game(HINSTANCE hInstance)
 // --------------------------------------------------------
 Game::~Game()
 {
+	for (size_t i = 0; i < entities.size(); i++)
+	{
+		delete entities[i];
+	}
+	entities.clear();
+
 	delete triangleShape;
 	delete squareShape;
 	delete houseShape;
@@ -209,6 +216,12 @@ void Game::CreateBasicGeometry()
 	triangleShape = new Mesh(vertices, 3, indices, 3, device.Get());
 	squareShape = new Mesh(vertices2, 4, indices2, 6, device.Get());
 	houseShape = new Mesh(vertices3, 6, indices3, 12, device.Get());
+
+	entities.push_back(new Entity(triangleShape));
+	entities.push_back(new Entity(triangleShape));
+	entities.push_back(new Entity(squareShape));
+	entities.push_back(new Entity(squareShape));
+	entities.push_back(new Entity(houseShape));
 }
 
 
@@ -230,6 +243,24 @@ void Game::Update(float deltaTime, float totalTime)
 	// Quit if the escape key is pressed
 	if (GetAsyncKeyState(VK_ESCAPE))
 		Quit();
+
+	if(entities.size() == 0) {
+		return;
+	}
+
+	float sinTime = (float)sin(totalTime);
+	float offset = (sinTime*deltaTime);
+	entities[0]->GetTransform()->MoveAbsolute(-offset/3.f, offset/5.f, 0);
+
+	entities[1]->GetTransform()->MoveAbsolute(0, offset, 0);
+
+	entities[2]->GetTransform()->SetPosition(-1.f*deltaTime, 0, 0);
+	entities[2]->GetTransform()->Rotate(0, 0, 0.01f);
+
+	entities[3]->GetTransform()->SetScale(1, 2.5f*deltaTime, 1);
+	entities[3]->GetTransform()->MoveAbsolute(offset/2.f, -offset/2.f, 0);
+
+	entities[4]->GetTransform()->SetScale(1, (offset*5.f)+1, 1);
 }
 
 // --------------------------------------------------------
@@ -266,50 +297,11 @@ void Game::Draw(float deltaTime, float totalTime)
 	// - However, this isn't always the case (but might be for this course)
 	context->IASetInputLayout(inputLayout.Get());
 
-	VertexShaderExternalData vsData;
-	
-	vsData.colorTint = XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f);
-	vsData.offset = XMFLOAT3(0.25f, 0.0f, 0.0f);
 
-	D3D11_MAPPED_SUBRESOURCE mappedBuffer = {};    
-	context->Map(constantBufferVS.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedBuffer);      
-	memcpy(mappedBuffer.pData, &vsData, sizeof(vsData));      
-	context->Unmap(constantBufferVS.Get(), 0);
-
-	 context->VSSetConstantBuffers( 0, 1, constantBufferVS.GetAddressOf());
-
-	// Set buffers in the input assembler
-	//  - Do this ONCE PER OBJECT you're drawing, since each object might
-	//    have different geometry.
-	//  - for this demo, this step *could* simply be done once during Init(),
-	//    but I'm doing it here because it's often done multiple times per frame
-	//    in a larger application/game
-	UINT stride = sizeof(Vertex);
-	UINT offset = 0;
-
-	// Draw a triangle
-	context->IASetVertexBuffers(0, 1, triangleShape->GetVertexBuffer(), &stride, &offset);
-	context->IASetIndexBuffer(triangleShape->GetIndexBuffer(), DXGI_FORMAT_R32_UINT, 0);
-	context->DrawIndexed(
-		triangleShape->GetIndexCount(),     
-		0,  
-		0); 
-
-	// Draw a square
-	context->IASetVertexBuffers(0, 1, squareShape->GetVertexBuffer(), &stride, &offset);
-	context->IASetIndexBuffer(squareShape->GetIndexBuffer(), DXGI_FORMAT_R32_UINT, 0);
-	context->DrawIndexed(
-		squareShape->GetIndexCount(),
-		0, 
-		0);
-
-	// Draw a house
-	context->IASetVertexBuffers(0, 1, houseShape->GetVertexBuffer(), &stride, &offset);
-	context->IASetIndexBuffer(houseShape->GetIndexBuffer(), DXGI_FORMAT_R32_UINT, 0);
-	context->DrawIndexed(
-		houseShape->GetIndexCount(),
-		0, 
-		0);
+	for (Entity* entity : entities)
+	{
+		entity->Draw(context.Get(), constantBufferVS.Get());
+	}
 
 	// Present the back buffer to the user
 	//  - Puts the final frame we're drawing into the window so the user can see it

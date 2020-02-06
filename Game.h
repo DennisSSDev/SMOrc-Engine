@@ -3,8 +3,10 @@
 #include "DXCore.h"
 #include <DirectXMath.h>
 #include <wrl/client.h>
+#include <vector>
 
 class Mesh;
+class Entity;
 
 class Game 
 	: public DXCore
@@ -32,6 +34,8 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11InputLayout> inputLayout;
 
 	Microsoft::WRL::ComPtr<ID3D11Buffer> constantBufferVS;
+
+	std::vector<Entity*> entities;
 
 	Mesh* triangleShape = nullptr;
 	Mesh* squareShape = nullptr;
