@@ -7,6 +7,8 @@
 
 class Mesh;
 class Entity;
+class Camera;
+class Material;
 
 class Game 
 	: public DXCore
@@ -36,6 +38,10 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> constantBufferVS;
 
 	std::vector<Entity*> entities;
+
+	std::vector<Material*> materials;
+
+	Camera* playerCamera = nullptr;
 
 	Mesh* triangleShape = nullptr;
 	Mesh* squareShape = nullptr;

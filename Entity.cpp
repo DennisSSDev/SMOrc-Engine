@@ -1,10 +1,13 @@
 #include "Entity.h"
 #include "Mesh.h"
+#include "Camera.h"
+#include "Material.h"
 #include "BufferStructs.h"
 
-Entity::Entity(Mesh* incomingMesh)
+Entity::Entity(Mesh* incomingMesh, Material* incomingMaterial)
 {
 	mesh = incomingMesh;
+	material = incomingMaterial;
 }
 
 Mesh* Entity::GetMesh() const
@@ -18,12 +21,17 @@ Transform* Entity::GetTransform()
 }
 
 // doesn't involve instanced rendering yet
-void Entity::Draw(ID3D11DeviceContext* context, ID3D11Buffer* constantBuffer)
+void Entity::Draw(ID3D11DeviceContext* context, ID3D11Buffer* constantBuffer, Camera* mainCamera)
 {
+	context->VSSetShader(material->GetVertexShader(), 0, 0);
+	context->PSSetShader(material->GetPixelShader(), 0, 0);
+
 	// set the vertex shader data
 	VertexShaderExternalData vsData;
-	vsData.colorTint = DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f);
+	vsData.colorTint = material->GetColorTint();
 	vsData.worldMatrix = transform.GetWorldMatrix();
+	vsData.viewMatrix = mainCamera->GetViewMatrix();
+	vsData.projMatrix = mainCamera->GetProjectionMatrix();
 
 	// map the vertex shader data to the constant buffer
 	D3D11_MAPPED_SUBRESOURCE mappedBuffer = {};

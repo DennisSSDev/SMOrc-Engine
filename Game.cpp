@@ -2,7 +2,9 @@
 #include "Vertex.h"
 #include "Mesh.h"
 #include "Entity.h"
+#include "Camera.h"
 #include "BufferStructs.h"
+#include "Material.h"
 
 // Needed for a helper function to read compiled shader files from the hard drive
 #pragma comment(lib, "d3dcompiler.lib")
@@ -52,6 +54,8 @@ Game::~Game()
 	delete triangleShape;
 	delete squareShape;
 	delete houseShape;
+
+	delete playerCamera;
 }
 
 // --------------------------------------------------------
@@ -64,6 +68,7 @@ void Game::Init()
 	// geometry to draw and some simple camera matrices.
 	//  - You'll be expanding and/or replacing these later
 	LoadShaders();
+
 	CreateBasicGeometry();
 
 	if(device) 
@@ -84,6 +89,8 @@ void Game::Init()
 
 		device->CreateBuffer(&cbDesc, 0, constantBufferVS.GetAddressOf());
 	}
+
+	playerCamera = new Camera(XMFLOAT3(0,0,-1.f), XMFLOAT3(0,0,0), (float)this->width / this->height);
 
 	// Tell the input assembler stage of the pipeline what kind of
 	// geometric primitives (points, lines or triangles) we want to draw.  
@@ -217,11 +224,18 @@ void Game::CreateBasicGeometry()
 	squareShape = new Mesh(vertices2, 4, indices2, 6, device.Get());
 	houseShape = new Mesh(vertices3, 6, indices3, 12, device.Get());
 
-	entities.push_back(new Entity(triangleShape));
-	entities.push_back(new Entity(triangleShape));
-	entities.push_back(new Entity(squareShape));
-	entities.push_back(new Entity(squareShape));
-	entities.push_back(new Entity(houseShape));
+	// setup materials
+	materials.push_back(new Material(XMFLOAT4(0, 0, 1.f, 1), vertexShader.Get(), pixelShader.Get()));
+	materials.push_back(new Material(XMFLOAT4(0, 1.f, 0, 1), vertexShader.Get(), pixelShader.Get()));
+	materials.push_back(new Material(XMFLOAT4(0, 0, 0, 1), vertexShader.Get(), pixelShader.Get()));
+	materials.push_back(new Material(XMFLOAT4(.15f, .1f, .5f, 1), vertexShader.Get(), pixelShader.Get()));
+	materials.push_back(new Material(XMFLOAT4(0.2f, 0.8f, 0, 1), vertexShader.Get(), pixelShader.Get()));
+
+	entities.push_back(new Entity(triangleShape, materials[0]));
+	entities.push_back(new Entity(triangleShape, materials[1]));
+	entities.push_back(new Entity(squareShape, materials[2]));
+	entities.push_back(new Entity(squareShape,  materials[3]));
+	entities.push_back(new Entity(houseShape,  materials[4]));
 }
 
 
@@ -233,6 +247,9 @@ void Game::OnResize()
 {
 	// Handle base-level DX resize stuff
 	DXCore::OnResize();
+	if(!playerCamera)
+		return;
+	playerCamera->UpdateProjectionMatrix((float)this->width / this->height);
 }
 
 // --------------------------------------------------------
@@ -244,7 +261,10 @@ void Game::Update(float deltaTime, float totalTime)
 	if (GetAsyncKeyState(VK_ESCAPE))
 		Quit();
 
-	if(entities.size() == 0) {
+	playerCamera->Update(deltaTime, hWnd);
+
+	if(entities.size() == 0) 
+	{
 		return;
 	}
 
@@ -282,14 +302,6 @@ void Game::Draw(float deltaTime, float totalTime)
 		0);
 
 
-	// Set the vertex and pixel shaders to use for the next Draw() command
-	//  - These don't technically need to be set every frame
-	//  - Once you start applying different shaders to different objects,
-	//    you'll need to swap the current shaders before each draw
-	context->VSSetShader(vertexShader.Get(), 0, 0);
-	context->PSSetShader(pixelShader.Get(), 0, 0);
-
-
 	// Ensure the pipeline knows how to interpret the data (numbers)
 	// from the vertex buffer.  
 	// - If all of your 3D models use the exact same vertex layout,
@@ -300,7 +312,7 @@ void Game::Draw(float deltaTime, float totalTime)
 
 	for (Entity* entity : entities)
 	{
-		entity->Draw(context.Get(), constantBufferVS.Get());
+		entity->Draw(context.Get(), constantBufferVS.Get(), playerCamera);
 	}
 
 	// Present the back buffer to the user

@@ -1,12 +1,15 @@
 #include "Transform.h"
 
+
+using namespace DirectX;
+
 Transform::Transform()
 {
-	DirectX::XMStoreFloat4x4(&worldMatrix, DirectX::XMMatrixIdentity());
-	localScale = DirectX::XMFLOAT3(1,1,1);
-	worldPosition = DirectX::XMFLOAT3(0,0,0);
-	rotation = DirectX::XMFLOAT3(0,0,0);
-	quaternionRotation = DirectX::XMFLOAT4(0,0,0,1);
+	XMStoreFloat4x4(&worldMatrix, XMMatrixIdentity());
+	localScale = XMFLOAT3(1,1,1);
+	worldPosition = XMFLOAT3(0,0,0);
+	rotation = XMFLOAT3(0,0,0);
+	quaternionRotation = XMFLOAT4(0,0,0,1);
 }
 
 Transform::~Transform()
@@ -16,20 +19,20 @@ Transform::~Transform()
 
 void Transform::SetPosition(float x, float y, float z)
 {
-	worldPosition = DirectX::XMFLOAT3(x, y, z);
+	worldPosition = XMFLOAT3(x, y, z);
 	MarkAsDirty();
 }
 
 void Transform::SetRotation(float pitch, float yaw, float roll)
 {
-	rotation = DirectX::XMFLOAT3(pitch, yaw, roll);
-	DirectX::XMStoreFloat4(&quaternionRotation,  DirectX::XMQuaternionRotationRollPitchYaw(pitch, yaw, roll));
+	rotation = XMFLOAT3(pitch, yaw, roll);
+	XMStoreFloat4(&quaternionRotation, XMQuaternionRotationRollPitchYaw(pitch, yaw, roll));
 	MarkAsDirty();
 }
 
 void Transform::SetScale(float x, float y, float z)
 {
-	localScale = DirectX::XMFLOAT3(x, y, z);
+	localScale = XMFLOAT3(x, y, z);
 	MarkAsDirty();
 }
 
@@ -60,11 +63,22 @@ DirectX::XMFLOAT4X4 Transform::GetWorldMatrix()
 
 void Transform::MoveAbsolute(float x, float y, float z)
 {
-	auto SIMD_Vec1 = DirectX::XMLoadFloat3(&worldPosition);
-	auto SIMD_Vec2 = DirectX::XMLoadFloat3(&DirectX::XMFLOAT3(x, y, z));
-	auto SIMD_Vec3 = DirectX::XMVectorAdd(SIMD_Vec1, SIMD_Vec2);
+	worldPosition.x += x;
+	worldPosition.y += y;
+	worldPosition.z += z;
 
-	DirectX::XMStoreFloat3(&worldPosition, SIMD_Vec3);
+	MarkAsDirty();
+}
+
+void Transform::MoveRelative(float x, float y, float z)
+{
+	// rotate the direction by the orientation of the object
+	DirectX::XMVECTOR translation = DirectX::XMVectorSet(x, y, z, 0);
+	DirectX::XMVECTOR rot = DirectX::XMQuaternionRotationRollPitchYawFromVector(DirectX::XMLoadFloat3(&rotation));
+	
+	DirectX::XMVECTOR dir = DirectX::XMVector3Rotate(translation, rot);
+
+	XMStoreFloat3(&worldPosition, XMLoadFloat3(&worldPosition) + dir);
 
 	MarkAsDirty();
 }
