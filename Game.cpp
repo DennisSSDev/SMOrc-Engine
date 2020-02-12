@@ -51,6 +51,12 @@ Game::~Game()
 	}
 	entities.clear();
 
+	for(size_t i = 0; i < materials.size(); i++) 
+	{
+		delete materials[i];
+	}
+	materials.clear();
+
 	delete triangleShape;
 	delete squareShape;
 	delete houseShape;
