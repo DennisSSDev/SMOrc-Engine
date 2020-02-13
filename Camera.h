@@ -15,7 +15,7 @@ public:
 		float nearClip = 0.01f, 
 		float farClip = 900.f,
 		float movementSpeed = 5.f,
-		float mouseLookSpeed = 1.f
+		float mouseLookSpeed = 2.f
 	);
 	~Camera() = default;
 

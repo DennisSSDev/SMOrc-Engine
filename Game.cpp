@@ -96,7 +96,7 @@ void Game::Init()
 		device->CreateBuffer(&cbDesc, 0, constantBufferVS.GetAddressOf());
 	}
 
-	playerCamera = new Camera(XMFLOAT3(0,0,-1.f), XMFLOAT3(0,0,0), (float)this->width / this->height);
+	playerCamera = new Camera(XMFLOAT3(0,0,-4.f), XMFLOAT3(0,0,0), (float)this->width / this->height);
 
 	// Tell the input assembler stage of the pipeline what kind of
 	// geometric primitives (points, lines or triangles) we want to draw.  
@@ -277,16 +277,22 @@ void Game::Update(float deltaTime, float totalTime)
 	float sinTime = (float)sin(totalTime);
 	float offset = (sinTime*deltaTime);
 	entities[0]->GetTransform()->MoveAbsolute(-offset/3.f, offset/5.f, 0);
+	entities[0]->GetTransform()->SetPosition(
+		entities[0]->GetTransform()->GetPosition().x,
+		entities[0]->GetTransform()->GetPosition().y, -.01f
+	);
 
 	entities[1]->GetTransform()->MoveAbsolute(0, offset, 0);
 
-	entities[2]->GetTransform()->SetPosition(-1.f*deltaTime, 0, 0);
-	entities[2]->GetTransform()->Rotate(0, 0, 0.01f);
+	entities[2]->GetTransform()->SetPosition(-1.f*deltaTime, 0, -1.f);
+	entities[2]->GetTransform()->Rotate(0, 0, 0.1f * deltaTime);
 
 	entities[3]->GetTransform()->SetScale(1, 2.5f*deltaTime, 1);
+	entities[3]->GetTransform()->MoveAbsolute(0,0, offset*2.f);
 	entities[3]->GetTransform()->MoveAbsolute(offset/2.f, -offset/2.f, 0);
 
-	entities[4]->GetTransform()->SetScale(1, (offset*5.f)+1, 1);
+	entities[4]->GetTransform()->Rotate(0, 0,  offset*2.f);
+	entities[4]->GetTransform()->SetPosition(0, 0, -0.05f);
 }
 
 // --------------------------------------------------------
