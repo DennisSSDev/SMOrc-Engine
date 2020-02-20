@@ -9,6 +9,8 @@ class Mesh;
 class Entity;
 class Camera;
 class Material;
+class SimplePixelShader;
+class SimpleVertexShader;
 
 class Game 
 	: public DXCore
@@ -31,11 +33,8 @@ private:
 	void CreateBasicGeometry();
 
 	// Shaders and shader-related constructs
-	Microsoft::WRL::ComPtr<ID3D11PixelShader> pixelShader;
-	Microsoft::WRL::ComPtr<ID3D11VertexShader> vertexShader;
-	Microsoft::WRL::ComPtr<ID3D11InputLayout> inputLayout;
-
-	Microsoft::WRL::ComPtr<ID3D11Buffer> constantBufferVS;
+	class SimplePixelShader* pixelShader = nullptr;
+	class SimpleVertexShader* vertexShader = nullptr;
 
 	std::vector<Entity*> entities;
 

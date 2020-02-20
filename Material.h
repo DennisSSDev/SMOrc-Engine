@@ -3,21 +3,25 @@
 #include <DirectXMath.h>
 #include <d3d11.h>
 
+class SimpleVertexShader;
+class SimplePixelShader;
+
 class Material 
 {
 public:
-	Material(DirectX::XMFLOAT4 colorTint, ID3D11VertexShader* VS, ID3D11PixelShader* PS);
+	Material(DirectX::XMFLOAT4 colorTint, class SimpleVertexShader* VS, class SimplePixelShader* PS);
 	~Material() = default;
 
-	inline ID3D11VertexShader* GetVertexShader() { return vertShader; }
-	inline ID3D11PixelShader* GetPixelShader() { return pixelShader; }
+	inline class SimpleVertexShader* GetVertexShader() { return vertShader; }
+	inline class SimplePixelShader* GetPixelShader() { return pixelShader; }
 	inline DirectX::XMFLOAT4 GetColorTint() { return colorTint; }
 
 	inline void SetColorTint(DirectX::XMFLOAT4 tint) { colorTint = tint; }
 
 private:
+
 	DirectX::XMFLOAT4 colorTint;
 
-	ID3D11VertexShader* vertShader = nullptr;
-	ID3D11PixelShader* pixelShader = nullptr;
+	class SimpleVertexShader* vertShader = nullptr;
+	class SimplePixelShader* pixelShader = nullptr;
 };

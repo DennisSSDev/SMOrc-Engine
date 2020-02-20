@@ -16,10 +16,10 @@ public:
 	Mesh* GetMesh() const;
 	Transform* GetTransform();
 
-	void Draw(ID3D11DeviceContext* context, ID3D11Buffer* constantBuffer, Camera* mainCamera);
+	void Draw(ID3D11DeviceContext* context, Camera* mainCamera);
 
 private:
 	Transform transform;
-	Mesh* mesh;
-	Material* material;
+	class Mesh* mesh;
+	class Material* material;
 };

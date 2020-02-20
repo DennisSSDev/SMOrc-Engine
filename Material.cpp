@@ -1,6 +1,7 @@
 #include "Material.h"
+#include "SimpleShader.h"
 
-Material::Material(DirectX::XMFLOAT4 colorTint, ID3D11VertexShader* VS, ID3D11PixelShader* PS)
+Material::Material(DirectX::XMFLOAT4 colorTint, class SimpleVertexShader* VS, class SimplePixelShader* PS)
 {
 	this->colorTint = colorTint;
 	vertShader = VS;
