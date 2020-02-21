@@ -1,7 +1,9 @@
 #include "Entity.h"
+#include <d3d11.h>
 #include "Mesh.h"
 #include "Camera.h"
 #include "Material.h"
+#include "Vertex.h"
 #include "SimpleShader.h"
 
 Entity::Entity(Mesh* incomingMesh, Material* incomingMaterial)

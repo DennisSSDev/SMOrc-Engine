@@ -1,9 +1,9 @@
 #pragma once
 
 #include "DXCore.h"
-#include <DirectXMath.h>
 #include <wrl/client.h>
 #include <vector>
+#include "Lights.h"
 
 class Mesh;
 class Entity;
@@ -36,14 +36,17 @@ private:
 	class SimplePixelShader* pixelShader = nullptr;
 	class SimpleVertexShader* vertexShader = nullptr;
 
-	std::vector<Entity*> entities;
+	std::vector<class Entity*> entities;
+	std::vector<class Material*> materials;
+	std::vector<class Mesh*> meshes;
 
-	std::vector<Material*> materials;
+	struct DirectionalLight dirLight;
+	struct DirectionalLight dirLight2;
+	struct DirectionalLight dirLight3;
 
-	Camera* playerCamera = nullptr;
+	class Camera* playerCamera = nullptr;
 
-	Mesh* triangleShape = nullptr;
-	Mesh* squareShape = nullptr;
-	Mesh* houseShape = nullptr;
+protected:
+	virtual void BeginPlay();
 };
 

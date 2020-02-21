@@ -1,25 +1,27 @@
 #pragma once
 
-#include <d3d11.h>
 #include "Transform.h"
 
 class Mesh;
 class Camera;
 class Material;
+class Transform;
+
+struct ID3D11DeviceContext;
 
 class Entity 
 {
 public:
-	Entity(Mesh* incomingMesh, Material* incomingMaterial);
+	Entity(class Mesh* incomingMesh, class Material* incomingMaterial);
 	~Entity() = default;
 
-	Mesh* GetMesh() const;
-	Transform* GetTransform();
+	class Mesh* GetMesh() const;
+	class Transform* GetTransform();
 
-	void Draw(ID3D11DeviceContext* context, Camera* mainCamera);
+	void Draw(struct ID3D11DeviceContext* context, class Camera* mainCamera);
 
 private:
-	Transform transform;
+	class Transform transform;
 	class Mesh* mesh;
 	class Material* material;
 };

@@ -5,6 +5,9 @@
 #include "Camera.h"
 #include "Material.h"
 #include "SimpleShader.h"
+#include <ppl.h>
+
+using namespace Concurrency;
 
 // Needed for a helper function to read compiled shader files from the hard drive
 #pragma comment(lib, "d3dcompiler.lib")
@@ -45,24 +48,36 @@ Game::Game(HINSTANCE hInstance)
 // --------------------------------------------------------
 Game::~Game()
 {
-	for (size_t i = 0; i < entities.size(); i++)
-	{
-		delete entities[i];
-	}
-	entities.clear();
 
-	for(size_t i = 0; i < materials.size(); i++) 
-	{
-		delete materials[i];
-	}
-	materials.clear();
+	parallel_for
+	(
+		size_t(0), entities.size(), [&](size_t i)
+		{
+			delete entities[i];
+		},
+		static_partitioner()
+	);
 
-	delete triangleShape;
-	delete squareShape;
-	delete houseShape;
+	parallel_for 
+	(
+		size_t(0), materials.size(), [&](size_t i)
+		{
+			delete materials[i];
+		},
+		static_partitioner()
+	);
+
+	parallel_for 
+	(
+		size_t(0), meshes.size(), [&](size_t i) 
+		{
+			delete meshes[i];
+		}, 
+		static_partitioner()
+	);
+
 
 	delete playerCamera;
-
 	delete pixelShader;
 	delete vertexShader;
 }
@@ -86,6 +101,22 @@ void Game::Init()
 	// geometric primitives (points, lines or triangles) we want to draw.  
 	// Essentially: "What kind of shape should the GPU draw with our data?"
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	dirLight.ambientColor = XMFLOAT3(0.1f, 0.1f, 0.1f);
+	dirLight.diffuseColor = XMFLOAT3(0.f, 0.f, 1.f);
+	dirLight.direction = XMFLOAT3(1, -1, 0);
+
+	dirLight2.ambientColor = XMFLOAT3(0.1f, 0.1f, 0.1f);
+	dirLight2.diffuseColor = XMFLOAT3(.7f, .7f, .7f);
+	dirLight2.direction = XMFLOAT3(0, 0, 1);
+
+	dirLight3.ambientColor = XMFLOAT3(0.1f, 0.1f, 0.1f);
+	dirLight3.diffuseColor = XMFLOAT3(0.f, .9f, 0.f);
+	dirLight3.direction = XMFLOAT3(-1, -1, -1);
+
+
+	// all the initialization for the engine has to be done prior to this. Now the game specific stuff needs to initialize
+	BeginPlay();
 }
 
 // --------------------------------------------------------
@@ -109,56 +140,45 @@ void Game::LoadShaders()
 // --------------------------------------------------------
 void Game::CreateBasicGeometry()
 {
-	
-	
-	Vertex vertices[] =
-	{
-		{ XMFLOAT3(+0.0f, +0.2f, +0.0f), XMFLOAT3(0,0,-1), XMFLOAT2(0,0) },
-		{ XMFLOAT3(+0.2f, -0.2f, +0.0f), XMFLOAT3(0,0,-1), XMFLOAT2(0,0) },
-		{ XMFLOAT3(-0.2f, -0.2f, +0.0f), XMFLOAT3(0,0,-1), XMFLOAT2(0,0) },
-	};
-
-	Vertex vertices2[] =
-	{
-		{ XMFLOAT3(-0.6f, 0.6f, +0.0f), XMFLOAT3(0,0,-1), XMFLOAT2(0,0) },
-		{ XMFLOAT3(-0.4f, 0.6f, +0.0f), XMFLOAT3(0,0,-1), XMFLOAT2(0,0) },
-		{ XMFLOAT3(-0.4f, -0.6f, +0.0f), XMFLOAT3(0,0,-1), XMFLOAT2(0,0) },
-		{ XMFLOAT3(-0.6f, -0.6f, +0.0f), XMFLOAT3(0,0,-1), XMFLOAT2(0,0) }
-	};
-
-	Vertex vertices3[] =
-	{
-		{ XMFLOAT3(0.6f, 0.8f, +0.0f), XMFLOAT3(0,0,-1), XMFLOAT2(0,0) },
-		{ XMFLOAT3(0.85f, 0.5f, +0.0f), XMFLOAT3(0,0,-1), XMFLOAT2(0,0) },
-		{ XMFLOAT3(0.35f, 0.5f, +0.0f), XMFLOAT3(0,0,-1), XMFLOAT2(0,0) },
-		{ XMFLOAT3(0.85f, 0.f, +0.0f), XMFLOAT3(0,0,-1), XMFLOAT2(0,0) },
-		{ XMFLOAT3(0.6f, 0.f, +0.0f), XMFLOAT3(0,0,-1), XMFLOAT2(0,0) },
-		{ XMFLOAT3(0.35f, 0.f, +0.0f), XMFLOAT3(0,0,-1), XMFLOAT2(0,0) }
-	};
-	
-	
-	unsigned int indices[] = { 0, 1, 2 };
-	unsigned int indices2[] = { 0, 1, 2, 0, 2, 3 };
-	unsigned int indices3[] = { 0, 1, 2, 1, 3, 4, 2, 1, 4, 2, 4, 5 };
-	
-	triangleShape = new Mesh(vertices, 3, indices, 3, device.Get());
-	squareShape = new Mesh(vertices2, 4, indices2, 6, device.Get());
-	houseShape = new Mesh(vertices3, 6, indices3, 12, device.Get());
+	// setup models
+    meshes.push_back(new Mesh(GetFullPathTo("../../Assets/Models/sphere.obj").c_str(), device.Get()));
+	meshes.push_back(new Mesh(GetFullPathTo("../../Assets/Models/cube.obj").c_str(), device.Get()));
+	meshes.push_back(new Mesh(GetFullPathTo("../../Assets/Models/helix.obj").c_str(), device.Get()));
+	meshes.push_back(new Mesh(GetFullPathTo("../../Assets/Models/torus.obj").c_str(), device.Get()));
+	meshes.push_back(new Mesh(GetFullPathTo("../../Assets/Models/cylinder.obj").c_str(), device.Get()));
 
 	// setup materials
-	materials.push_back(new Material(XMFLOAT4(0, 0, 1.f, 1), vertexShader, pixelShader));
-	materials.push_back(new Material(XMFLOAT4(0, 1.f, 0, 1), vertexShader, pixelShader));
-	materials.push_back(new Material(XMFLOAT4(1, 0, 0, 1), vertexShader, pixelShader));
+	materials.push_back(new Material(XMFLOAT4(.2f, .17f, .54f, 1), vertexShader, pixelShader));
+	materials.push_back(new Material(XMFLOAT4(.4f, .86f, .39f, 1), vertexShader, pixelShader));
+	materials.push_back(new Material(XMFLOAT4(.88f, 0.1f, .68f, 1), vertexShader, pixelShader));
 	materials.push_back(new Material(XMFLOAT4(.15f, .1f, .5f, 1), vertexShader, pixelShader));
-	materials.push_back(new Material(XMFLOAT4(0.2f, 0.8f, 0, 1), vertexShader, pixelShader));
+	materials.push_back(new Material(XMFLOAT4(0.2f, 0.8f, .28f, 1), vertexShader, pixelShader));
 
-	entities.push_back(new Entity(triangleShape, materials[0]));
-	entities.push_back(new Entity(triangleShape, materials[1]));
-	entities.push_back(new Entity(squareShape, materials[2]));
-	entities.push_back(new Entity(squareShape,  materials[3]));
-	entities.push_back(new Entity(houseShape,  materials[4]));
+	// setup entitites
+	entities.push_back(new Entity(meshes[0], materials[0]));
+	entities.push_back(new Entity(meshes[1], materials[1]));
+	entities.push_back(new Entity(meshes[2], materials[2]));
+	entities.push_back(new Entity(meshes[3],  materials[3]));
+	entities.push_back(new Entity(meshes[4],  materials[4]));
 }
 
+
+void Game::BeginPlay()
+{
+	if(entities.size() <= 0)
+		return;
+
+	
+	entities[0]->GetTransform()->MoveAbsolute(3, 0, 1);
+
+	entities[1]->GetTransform()->SetPosition(.2f, 1, .5f);
+
+	//helix
+	entities[2]->GetTransform()->SetPosition(-1.5, 0, -1);
+	entities[2]->GetTransform()->SetScale(.5f, .5f, .5f);
+
+	entities[4]->GetTransform()->SetPosition(1, -1.5, -.05f);
+}
 
 // --------------------------------------------------------
 // Handle resizing DirectX "stuff" to match the new window size.
@@ -182,8 +202,6 @@ void Game::Update(float deltaTime, float totalTime)
 	if (GetAsyncKeyState(VK_ESCAPE))
 		Quit();
 
-	playerCamera->Update(deltaTime, hWnd);
-
 	if(entities.size() == 0) 
 	{
 		return;
@@ -191,6 +209,7 @@ void Game::Update(float deltaTime, float totalTime)
 
 	float sinTime = (float)sin(totalTime);
 	float offset = (sinTime*deltaTime);
+
 	entities[0]->GetTransform()->MoveAbsolute(-offset/3.f, offset/5.f, 0);
 	entities[0]->GetTransform()->SetPosition(
 		entities[0]->GetTransform()->GetPosition().x,
@@ -199,15 +218,15 @@ void Game::Update(float deltaTime, float totalTime)
 
 	entities[1]->GetTransform()->MoveAbsolute(0, offset, 0);
 
-	entities[2]->GetTransform()->SetPosition(-1.f*deltaTime, 0, -1.f);
-	entities[2]->GetTransform()->Rotate(0, 0, 0.1f * deltaTime);
-
-	entities[3]->GetTransform()->SetScale(1, 2.5f*deltaTime, 1);
+	entities[2]->GetTransform()->Rotate(0,  1.f * deltaTime, 0);
+	
 	entities[3]->GetTransform()->MoveAbsolute(0,0, offset*2.f);
 	entities[3]->GetTransform()->MoveAbsolute(offset/2.f, -offset/2.f, 0);
+	entities[3]->GetTransform()->Rotate(-1.5f * deltaTime, 0, 0);
 
 	entities[4]->GetTransform()->Rotate(0, 0,  offset*2.f);
-	entities[4]->GetTransform()->SetPosition(0, 0, -0.05f);
+
+	playerCamera->Update(deltaTime, hWnd);
 }
 
 // --------------------------------------------------------
@@ -227,6 +246,11 @@ void Game::Draw(float deltaTime, float totalTime)
 		D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
 		1.0f,
 		0);
+
+	pixelShader->SetData("dirLight", &dirLight, sizeof(DirectionalLight));
+	pixelShader->SetData("dirLight2", &dirLight2, sizeof(DirectionalLight));
+	pixelShader->SetData("dirLight3", &dirLight3, sizeof(DirectionalLight));
+	pixelShader->CopyAllBufferData();
 
 	for (Entity* entity : entities)
 	{
