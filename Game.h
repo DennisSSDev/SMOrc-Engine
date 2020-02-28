@@ -40,9 +40,9 @@ private:
 	std::vector<class Material*> materials;
 	std::vector<class Mesh*> meshes;
 
-	struct DirectionalLight dirLight;
-	struct DirectionalLight dirLight2;
-	struct DirectionalLight dirLight3;
+	struct Light dirLight;
+	struct Light pointLight;
+	struct Light dirLight3;
 
 	class Camera* playerCamera = nullptr;
 

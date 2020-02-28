@@ -25,7 +25,7 @@ public:
 
 	inline DirectX::XMFLOAT4X4 GetProjectionMatrix() { return projMatrix; };
 	inline DirectX::XMFLOAT4X4 GetViewMatrix() { return viewMatrix; };
-
+	inline Transform* GetTransform() { return &transform; }
 private:
 	Transform transform;
 	DirectX::XMFLOAT4X4 viewMatrix;

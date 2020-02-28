@@ -2,11 +2,14 @@
 
 #include <DirectXMath.h>
 
-struct DirectionalLight
+struct Light
 {
 	DirectX::XMFLOAT3 ambientColor;
-	float padding1;
+	float ambientIntensity;
 	DirectX::XMFLOAT3 diffuseColor;
-	float padding2;
+	float diffuseIntensity;
 	DirectX::XMFLOAT3 direction;
+	float padding2;
+	DirectX::XMFLOAT3 position;
+	UINT type;
 };

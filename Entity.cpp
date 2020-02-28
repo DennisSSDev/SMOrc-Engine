@@ -30,6 +30,7 @@ void Entity::Draw(ID3D11DeviceContext* context, Camera* mainCamera)
 	material->GetPixelShader()->SetShader();
 
 	SimpleVertexShader* vs = material->GetVertexShader();
+	SimplePixelShader* ps = material->GetPixelShader();
 
 	// set the vertex shader data
 	vs->SetFloat4("colorTint",  material->GetColorTint());
@@ -38,6 +39,9 @@ void Entity::Draw(ID3D11DeviceContext* context, Camera* mainCamera)
 	vs->SetMatrix4x4("proj", mainCamera->GetProjectionMatrix());
 
 	vs->CopyAllBufferData();
+
+	ps->SetFloat("shininess", material->GetShininess());
+	ps->CopyAllBufferData();
 
 	UINT stride = sizeof(Vertex);
 	UINT offset = 0;

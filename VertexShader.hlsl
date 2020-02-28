@@ -39,6 +39,7 @@ struct VertexToPixel
 	float4 position		: SV_POSITION;	// XYZW position (System Value Position)
 	float3 normal		: NORMAL;
 	float4 color		: COLOR;        // RGBA color
+	float3 worldPos		: POSITION;
 };
 
 // --------------------------------------------------------
@@ -59,6 +60,7 @@ VertexToPixel main( VertexShaderInput input )
 	// @todo: what if the model has none-uniform scales? Make sure to apply the inverse transpose instead of just casting to 3x3
 	output.normal = mul((float3x3)world, input.normal);
 	output.color = colorTint;
+	output.worldPos = mul(world, float4(input.position, 1.0f)).xyz;
 
 	return output;
 }
