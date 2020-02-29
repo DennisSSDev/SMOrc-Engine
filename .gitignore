@@ -8,6 +8,10 @@
 
 # Build results
 
+
+.vs/SmorcEngine/v16/ipch/
+*.VC.db
+
 [Dd]ebug/
 [Rr]elease/
 x64/

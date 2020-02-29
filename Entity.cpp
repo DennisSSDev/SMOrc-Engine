@@ -43,6 +43,9 @@ void Entity::Draw(ID3D11DeviceContext* context, Camera* mainCamera)
 	ps->SetFloat("shininess", material->GetShininess());
 	ps->CopyAllBufferData();
 
+	ps->SetShaderResourceView("diffuseTexture", material->GetSrvResource());
+	ps->SetSamplerState("samplerOptions", material->GetTextureSampler());
+
 	UINT stride = sizeof(Vertex);
 	UINT offset = 0;
 

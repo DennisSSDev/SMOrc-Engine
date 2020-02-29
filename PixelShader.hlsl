@@ -24,11 +24,15 @@ cbuffer ExternalData : register(b0)
 	float shininess;
 }
 
+Texture2D diffuseTexture: register(t0);
+SamplerState samplerOptions: register(s0);
+
 struct VertexToPixel
 {
-	float4 position		: SV_POSITION;
+	float4 position		: SV_POSITION;	// XYZW position (System Value Position)
+	float4 color		: COLOR;        // RGBA color
+	float2 uv			: TEXCOORD;
 	float3 normal		: NORMAL;
-	float4 color		: COLOR;
 	float3 worldPos		: POSITION;
 };
 
@@ -84,12 +88,14 @@ float4 CalculateLight(float3 normal, float4 surfaceColor, float3 worldPos, Light
 	else 
 	{
 		diffuse = Diffuse(normal, light.direction);
-		spec = SpecularPhong(normal, light.direction, toCamera, 64.0f);
+		// make sure to normalize the light direction, otherwise the highlights are off
+		spec = SpecularPhong(normal, normalize(light.direction), toCamera, 64.0f);
 	}
 
 	float3 finalLight = ( (diffuse + ( shininess * spec ) ) * light.diffuseIntensity * light.diffuseColor) + (light.ambientColor * light.ambientIntensity);
 
 	// @todo: think if you actually want to consider the surfaceColor here with the specular
+	// @todo: specular lights will overlap each other, consider abstracting each light's specular and multiplying them all together
 	return float4(finalLight * surfaceColor, 1);
 }
 
@@ -97,9 +103,11 @@ float4 main(VertexToPixel input) : SV_TARGET
 {
 	input.normal = normalize(input.normal);
 
+	input.color = diffuseTexture.Sample(samplerOptions, input.uv) * input.color;
+
 	float4 light1 = CalculateLight(input.normal, input.color, input.worldPos, dirLight);
 	float4 light2 = CalculateLight(input.normal, input.color, input.worldPos, pointLight);
-	//return light2;
 	float4 light3 = CalculateLight(input.normal, input.color, input.worldPos, dirLight3);
+
 	return (light1 + light2 + light3);
 }

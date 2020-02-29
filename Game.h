@@ -36,6 +36,11 @@ private:
 	class SimplePixelShader* pixelShader = nullptr;
 	class SimpleVertexShader* vertexShader = nullptr;
 
+	//texture stuff
+	ID3D11ShaderResourceView* srvBrick;
+	ID3D11ShaderResourceView* srvMetal;
+	ID3D11SamplerState* textureSampler;
+
 	std::vector<class Entity*> entities;
 	std::vector<class Material*> materials;
 	std::vector<class Mesh*> meshes;

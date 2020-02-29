@@ -5,6 +5,7 @@
 #include "Camera.h"
 #include "Material.h"
 #include "SimpleShader.h"
+#include "WICTextureLoader.h"
 #include <ppl.h>
 
 using namespace Concurrency;
@@ -76,6 +77,9 @@ Game::~Game()
 		static_partitioner()
 	);
 
+	srvBrick->Release();
+	srvMetal->Release();
+	textureSampler->Release();
 
 	delete playerCamera;
 	delete pixelShader;
@@ -103,26 +107,26 @@ void Game::Init()
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	dirLight.ambientColor = XMFLOAT3(0.1f, 0.1f, 0.1f);
-	dirLight.diffuseColor = XMFLOAT3(.8f, .8f, .8f);
+	dirLight.diffuseColor = XMFLOAT3(1.f, 1.f, 1.f);
 	dirLight.direction = XMFLOAT3(1, -1, 0);
 	dirLight.type = 0;
 	dirLight.ambientIntensity = 1.f;
-	dirLight.diffuseIntensity = .5f;
+	dirLight.diffuseIntensity = 1.f;
 
 	pointLight.ambientColor = XMFLOAT3(0.1f, 0.1f, 0.1f);
 	pointLight.diffuseColor = XMFLOAT3(.7f, .7f, .7f);
 	//dirLight2.direction = XMFLOAT3(0, 0, 1);
 	pointLight.type = 1;
 	pointLight.ambientIntensity = 1.f;
-	pointLight.diffuseIntensity = 1.f;
+	pointLight.diffuseIntensity = 1.5f;
 	pointLight.position = XMFLOAT3(0, 0, 0);
 
 	dirLight3.ambientColor = XMFLOAT3(0.1f, 0.1f, 0.1f);
-	dirLight3.diffuseColor = XMFLOAT3(.4f, .4f, .4f);
+	dirLight3.diffuseColor = XMFLOAT3(1.f, 1.f, 1.f);
 	dirLight3.direction = XMFLOAT3(-1, -1, -1);
 	dirLight3.type = 0;
-	dirLight3.ambientIntensity = .5f;
-	dirLight3.diffuseIntensity = .5f;
+	dirLight3.ambientIntensity = 1.f;
+	dirLight3.diffuseIntensity = 1.f;
 
 	// all the initialization for the engine has to be done prior to this. Now the game specific stuff needs to initialize
 	BeginPlay();
@@ -156,12 +160,38 @@ void Game::CreateBasicGeometry()
 	meshes.push_back(new Mesh(GetFullPathTo("../../Assets/Models/torus.obj").c_str(), device.Get()));
 	meshes.push_back(new Mesh(GetFullPathTo("../../Assets/Models/cylinder.obj").c_str(), device.Get()));
 
+	D3D11_SAMPLER_DESC sampDesc = {};
+	sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+	sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+	sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+	//sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR; // Tri-linear filtering
+	sampDesc.Filter = D3D11_FILTER_ANISOTROPIC;
+	sampDesc.MaxAnisotropy = 16;
+	sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
+	HRESULT res = device->CreateSamplerState(&sampDesc, &textureSampler);
+
+	res = CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/brick.png").c_str(), nullptr, &srvBrick);
+	if(res != S_OK) 
+	{
+		assert(false);
+	}
+	res = CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"/../../Assets/Textures/metal.png").c_str(), nullptr, &srvMetal);
+	if (res != S_OK)
+	{
+		assert(false);
+	}
+
 	// setup materials
-	materials.push_back(new Material(XMFLOAT4(.2f, .17f, .54f, 1), 1.f, vertexShader, pixelShader));
-	materials.push_back(new Material(XMFLOAT4(.4f, .86f, .39f, 1), 1.f, vertexShader, pixelShader));
-	materials.push_back(new Material(XMFLOAT4(.88f, 0.1f, .68f, 1), .75f, vertexShader, pixelShader));
-	materials.push_back(new Material(XMFLOAT4(.15f, .1f, .5f, 1), .35f, vertexShader, pixelShader));
-	materials.push_back(new Material(XMFLOAT4(0.2f, 0.8f, .28f, 1), 0, vertexShader, pixelShader));
+	// sphere gets shininess
+	materials.push_back(new Material(XMFLOAT4(.7f, .7f, .7f, 1), 1.f, srvMetal, textureSampler, vertexShader, pixelShader));
+	// cube gets full shininess
+	materials.push_back(new Material(XMFLOAT4(.8f, .86f, .8f, 1), 1.f, srvBrick, textureSampler, vertexShader, pixelShader));
+	// helix slightly less shiny
+	materials.push_back(new Material(XMFLOAT4(.88f, 0.1f, .68f, 1), .75f, srvMetal, textureSampler, vertexShader, pixelShader));
+	// torus barely shiny
+	materials.push_back(new Material(XMFLOAT4(.15f, .1f, .5f, 1), .35f, srvBrick, textureSampler, vertexShader, pixelShader));
+	// cylinder is not going to have any shininess
+	materials.push_back(new Material(XMFLOAT4(0.2f, 0.8f, .28f, 1), 0, srvMetal, textureSampler, vertexShader, pixelShader));
 
 	// setup entities
 	entities.push_back(new Entity(meshes[0], materials[0]));
@@ -260,6 +290,7 @@ void Game::Draw(float deltaTime, float totalTime)
 	pixelShader->SetData("pointLight", &pointLight, sizeof(Light));
 	pixelShader->SetData("dirLight3", &dirLight3, sizeof(Light));
 	pixelShader->SetFloat3("cameraPosition", playerCamera->GetTransform()->GetPosition());
+
 	pixelShader->CopyAllBufferData();
 
 	for (Entity* entity : entities)
