@@ -12,6 +12,8 @@
 .vs/SmorcEngine/v16/ipch/
 *.VC.db
 
+packages/
+
 [Dd]ebug/
 [Rr]elease/
 x64/
