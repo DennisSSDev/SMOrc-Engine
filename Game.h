@@ -36,9 +36,16 @@ private:
 	class SimplePixelShader* pixelShader = nullptr;
 	class SimpleVertexShader* vertexShader = nullptr;
 
+	class SimplePixelShader* normalPS = nullptr;
+	class SimpleVertexShader* normalVS = nullptr;
+
 	//texture stuff
 	ID3D11ShaderResourceView* srvBrick;
 	ID3D11ShaderResourceView* srvMetal;
+	ID3D11ShaderResourceView* srvRock;
+	ID3D11ShaderResourceView* srvRockNormal;
+	ID3D11ShaderResourceView* srvCushion;
+	ID3D11ShaderResourceView* srvCushionNormal;
 	ID3D11SamplerState* textureSampler;
 
 	std::vector<class Entity*> entities;

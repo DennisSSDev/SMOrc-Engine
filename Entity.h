@@ -17,6 +17,7 @@ public:
 
 	class Mesh* GetMesh() const;
 	class Transform* GetTransform();
+	class Material* GetMaterial() const;
 
 	void Draw(struct ID3D11DeviceContext* context, class Camera* mainCamera);
 

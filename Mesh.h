@@ -20,6 +20,7 @@ public:
 private:
 
 	void GenerateVertAndIndexBuffers(struct Vertex* vertexData, unsigned int vertexCount, unsigned int* indices, int indexCount, struct ID3D11Device* device);
+	void CalculateTangents(Vertex* verts, int numVerts, unsigned int* indices, int numIndices);
 
 	Microsoft::WRL::ComPtr<struct ID3D11Buffer> vertexBuffer;
 	Microsoft::WRL::ComPtr<struct ID3D11Buffer> indexBuffer;

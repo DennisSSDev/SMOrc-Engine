@@ -49,7 +49,6 @@ Game::Game(HINSTANCE hInstance)
 // --------------------------------------------------------
 Game::~Game()
 {
-
 	parallel_for
 	(
 		size_t(0), entities.size(), [&](size_t i)
@@ -79,11 +78,18 @@ Game::~Game()
 
 	srvBrick->Release();
 	srvMetal->Release();
+	srvRock->Release();
+	srvRockNormal->Release();
 	textureSampler->Release();
+	srvCushion->Release();
+	srvCushionNormal->Release();
 
 	delete playerCamera;
 	delete pixelShader;
 	delete vertexShader;
+
+	delete normalVS;
+	delete normalPS;
 }
 
 // --------------------------------------------------------
@@ -106,7 +112,7 @@ void Game::Init()
 	// Essentially: "What kind of shape should the GPU draw with our data?"
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	dirLight.ambientColor = XMFLOAT3(0.1f, 0.1f, 0.1f);
+	dirLight.ambientColor = XMFLOAT3(0.25f, 0.23f, 0.1f);
 	dirLight.diffuseColor = XMFLOAT3(1.f, 1.f, 1.f);
 	dirLight.direction = XMFLOAT3(1, -1, 0);
 	dirLight.type = 0;
@@ -114,11 +120,10 @@ void Game::Init()
 	dirLight.diffuseIntensity = 1.f;
 
 	pointLight.ambientColor = XMFLOAT3(0.1f, 0.1f, 0.1f);
-	pointLight.diffuseColor = XMFLOAT3(.7f, .7f, .7f);
-	//dirLight2.direction = XMFLOAT3(0, 0, 1);
+	pointLight.diffuseColor = XMFLOAT3(.65f, .2f, .3f);
 	pointLight.type = 1;
-	pointLight.ambientIntensity = 1.f;
-	pointLight.diffuseIntensity = 1.5f;
+	pointLight.ambientIntensity = 0.5f;
+	pointLight.diffuseIntensity = 1.f;
 	pointLight.position = XMFLOAT3(0, 0, 0);
 
 	dirLight3.ambientColor = XMFLOAT3(0.1f, 0.1f, 0.1f);
@@ -144,6 +149,9 @@ void Game::LoadShaders()
 {
 	vertexShader = new SimpleVertexShader(device.Get(), context.Get(), GetFullPathTo_Wide(L"VertexShader.cso").c_str());
 	pixelShader = new SimplePixelShader(device.Get(), context.Get(), GetFullPathTo_Wide(L"PixelShader.cso").c_str());
+
+	normalVS = new SimpleVertexShader(device.Get(), context.Get(), GetFullPathTo_Wide(L"NormalMapVS.cso").c_str());
+	normalPS = new SimplePixelShader(device.Get(), context.Get(), GetFullPathTo_Wide(L"NormalMapPS.cso").c_str());
 }
 
 
@@ -180,16 +188,37 @@ void Game::CreateBasicGeometry()
 	{
 		assert(false);
 	}
+	res = CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"/../../Assets/Textures/rock.png").c_str(), nullptr, &srvRock);
+	if (res != S_OK)
+	{
+		assert(false);
+	}
+	res = CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"/../../Assets/Textures/rock_normals.png").c_str(), nullptr, &srvRockNormal);
+	if (res != S_OK)
+	{
+		assert(false);
+	}
+	res = CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"/../../Assets/Textures/cushion.png").c_str(), nullptr, &srvCushion);
+	if (res != S_OK)
+	{
+		assert(false);
+	}
+	res = CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"/../../Assets/Textures/cushion_normals.png").c_str(), nullptr, &srvCushionNormal);
+	if (res != S_OK)
+	{
+		assert(false);
+	}
 
 	// setup materials
 	// sphere gets shininess
-	materials.push_back(new Material(XMFLOAT4(.7f, .7f, .7f, 1), 1.f, srvMetal, textureSampler, vertexShader, pixelShader));
+	// uses normal maps
+	materials.push_back(new Material(XMFLOAT4(1.f, 1.f, 1.f, 1.f), 5.f, srvCushion, srvCushionNormal, textureSampler, normalVS, normalPS));
 	// cube gets full shininess
 	materials.push_back(new Material(XMFLOAT4(.8f, .86f, .8f, 1), 1.f, srvBrick, textureSampler, vertexShader, pixelShader));
 	// helix slightly less shiny
 	materials.push_back(new Material(XMFLOAT4(.88f, 0.1f, .68f, 1), .75f, srvMetal, textureSampler, vertexShader, pixelShader));
 	// torus barely shiny
-	materials.push_back(new Material(XMFLOAT4(.15f, .1f, .5f, 1), .35f, srvBrick, textureSampler, vertexShader, pixelShader));
+	materials.push_back(new Material(XMFLOAT4(.75f, .75f, .8f, 1), .45f, srvRock, srvRockNormal, textureSampler, normalVS, normalPS));
 	// cylinder is not going to have any shininess
 	materials.push_back(new Material(XMFLOAT4(0.2f, 0.8f, .28f, 1), 0, srvMetal, textureSampler, vertexShader, pixelShader));
 
@@ -286,15 +315,18 @@ void Game::Draw(float deltaTime, float totalTime)
 		1.0f,
 		0);
 
-	pixelShader->SetData("dirLight", &dirLight, sizeof(Light));
-	pixelShader->SetData("pointLight", &pointLight, sizeof(Light));
-	pixelShader->SetData("dirLight3", &dirLight3, sizeof(Light));
-	pixelShader->SetFloat3("cameraPosition", playerCamera->GetTransform()->GetPosition());
-
-	pixelShader->CopyAllBufferData();
-
 	for (Entity* entity : entities)
 	{
+		Material* entityMat = entity->GetMaterial();
+		entityMat->GetVertexShader()->SetShader();
+		entityMat->GetPixelShader()->SetShader();
+		
+		entityMat->GetPixelShader()->SetData("dirLight", &dirLight, sizeof(Light));
+		entityMat->GetPixelShader()->SetData("pointLight", &pointLight, sizeof(Light));
+		entityMat->GetPixelShader()->SetData("dirLight3", &dirLight3, sizeof(Light));
+		entityMat->GetPixelShader()->SetFloat3("cameraPosition", playerCamera->GetTransform()->GetPosition());
+		entityMat->GetPixelShader()->CopyAllBufferData();
+
 		entity->Draw(context.Get(), playerCamera);
 	}
 

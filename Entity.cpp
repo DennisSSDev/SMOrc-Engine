@@ -22,12 +22,14 @@ Transform* Entity::GetTransform()
 	return &transform;
 }
 
+class Material* Entity::GetMaterial() const
+{
+	return material;
+}
+
 // doesn't involve instanced rendering yet
 void Entity::Draw(ID3D11DeviceContext* context, Camera* mainCamera)
 {
-
-	material->GetVertexShader()->SetShader();
-	material->GetPixelShader()->SetShader();
 
 	SimpleVertexShader* vs = material->GetVertexShader();
 	SimplePixelShader* ps = material->GetPixelShader();
@@ -43,7 +45,11 @@ void Entity::Draw(ID3D11DeviceContext* context, Camera* mainCamera)
 	ps->SetFloat("shininess", material->GetShininess());
 	ps->CopyAllBufferData();
 
-	ps->SetShaderResourceView("diffuseTexture", material->GetSrvResource());
+	ps->SetShaderResourceView("diffuseTexture", material->GetDiffuseTextureWrapper());
+	if(material->IsNormalMapMaterial()) 
+	{
+		ps->SetShaderResourceView("normalMap", material->GetNormalMapWrapper());
+	}
 	ps->SetSamplerState("samplerOptions", material->GetTextureSampler());
 
 	UINT stride = sizeof(Vertex);
