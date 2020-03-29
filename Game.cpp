@@ -84,6 +84,12 @@ Game::~Game()
 	srvCushion->Release();
 	srvCushionNormal->Release();
 
+	srvBlueprintBlue->Release();
+	srvBlueprintGray->Release();
+	srvBlueprintOrange->Release();
+	srvBlueprintDefault->Release();
+	srvBlueprintGreen->Release();
+
 	delete playerCamera;
 	delete pixelShader;
 	delete vertexShader;
@@ -168,6 +174,15 @@ void Game::CreateBasicGeometry()
 	meshes.push_back(new Mesh(GetFullPathTo("../../Assets/Models/torus.obj").c_str(), device.Get()));
 	meshes.push_back(new Mesh(GetFullPathTo("../../Assets/Models/cylinder.obj").c_str(), device.Get()));
 
+	// setup game room models
+	meshes.push_back(new Mesh(GetFullPathTo("../../Assets/Models/Rooms/BeginRoom.obj").c_str(), device.Get()));
+	meshes.push_back(new Mesh(GetFullPathTo("../../Assets/Models/Rooms/MainRoom.obj").c_str(), device.Get()));
+
+	meshes.push_back(new Mesh(GetFullPathTo("../../Assets/Models/RoomAssets/Arch.obj").c_str(), device.Get()));
+	meshes.push_back(new Mesh(GetFullPathTo("../../Assets/Models/RoomAssets/Doorway.obj").c_str(), device.Get()));
+	meshes.push_back(new Mesh(GetFullPathTo("../../Assets/Models/RoomAssets/Prism.obj").c_str(), device.Get()));
+	meshes.push_back(new Mesh(GetFullPathTo("../../Assets/Models/RoomAssets/Pipe.obj").c_str(), device.Get()));
+
 	D3D11_SAMPLER_DESC sampDesc = {};
 	sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
 	sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
@@ -208,6 +223,31 @@ void Game::CreateBasicGeometry()
 	{
 		assert(false);
 	}
+	res = CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"/../../Assets/Textures/GridBox_Default.png").c_str(), nullptr, &srvBlueprintDefault);
+	if (res != S_OK)
+	{
+		assert(false);
+	}
+	res = CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"/../../Assets/Textures/prototype_512x512_orange.png").c_str(), nullptr, &srvBlueprintOrange);
+	if (res != S_OK)
+	{
+		assert(false);
+	}
+	res = CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"/../../Assets/Textures/prototype_512x512_blue2.png").c_str(), nullptr, &srvBlueprintBlue);
+	if(res != S_OK) 
+	{
+		assert(false);
+	}
+	res = CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"/../../Assets/Textures/prototype_512x512_grey2.png").c_str(), nullptr, &srvBlueprintGray);
+	if (res != S_OK)
+	{
+		assert(false);
+	}
+	res = CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"/../../Assets/Textures/prototype_512x512_green1.png").c_str(), nullptr, &srvBlueprintGreen);
+	if (res != S_OK)
+	{
+		assert(false);
+	}
 
 	// setup materials
 	// sphere gets shininess
@@ -222,12 +262,40 @@ void Game::CreateBasicGeometry()
 	// cylinder is not going to have any shininess
 	materials.push_back(new Material(XMFLOAT4(0.2f, 0.8f, .28f, 1), 0, srvMetal, textureSampler, vertexShader, pixelShader));
 
+	/*
+	Stealth Game materials go here
+	*/
+	materials.push_back(new Material(XMFLOAT4(1.f, 1.f, 1.f, 1.f), 0.f, srvBlueprintBlue, textureSampler, vertexShader, pixelShader));
+	materials.push_back(new Material(XMFLOAT4(1.f, 1.f, 1.f, 1.f), 0.f, srvBlueprintGray, textureSampler, vertexShader, pixelShader));
+
+	materials.push_back(new Material(XMFLOAT4(1.f, 1.f, 1.f, 1.f), 0.f, srvBlueprintDefault, textureSampler, vertexShader, pixelShader));
+	materials.push_back(new Material(XMFLOAT4(1.f, 1.f, 1.f, 1.f), 0.f, srvBlueprintOrange, textureSampler, vertexShader, pixelShader));
+	materials.push_back(new Material(XMFLOAT4(1.f, 1.f, 1.f, 1.f), 0.f, srvBlueprintGreen, textureSampler, vertexShader, pixelShader));
+
 	// setup entities
 	entities.push_back(new Entity(meshes[0], materials[0]));
 	entities.push_back(new Entity(meshes[1], materials[1]));
 	entities.push_back(new Entity(meshes[2], materials[2]));
 	entities.push_back(new Entity(meshes[3],  materials[3]));
 	entities.push_back(new Entity(meshes[4],  materials[4]));
+
+	/*entities for the stealth game*/
+
+	// blue building
+	entities.push_back(new Entity(meshes[5], materials[5]));
+	// gray building
+	entities.push_back(new Entity(meshes[6], materials[6]));
+
+	// room assets
+	
+	//arch
+	entities.push_back(new Entity(meshes[7], materials[7]));
+	//doorway
+	entities.push_back(new Entity(meshes[8], materials[8]));
+	//prism
+	entities.push_back(new Entity(meshes[9], materials[8]));
+	//pipe
+	entities.push_back(new Entity(meshes[10], materials[9]));
 }
 
 
@@ -236,7 +304,6 @@ void Game::BeginPlay()
 	if(entities.size() <= 0)
 		return;
 
-	
 	entities[0]->GetTransform()->MoveAbsolute(3, 0, 1);
 
 	entities[1]->GetTransform()->SetPosition(.2f, 1, .5f);
@@ -246,6 +313,18 @@ void Game::BeginPlay()
 	entities[2]->GetTransform()->SetScale(.5f, .5f, .5f);
 
 	entities[4]->GetTransform()->SetPosition(1, -1.5, -.05f);
+
+	// stealth game related begin play
+	entities[6]->GetTransform()->MoveAbsolute(0, 0, -10);
+
+	entities[7]->GetTransform()->SetRotation(0, 35.5f, 0.f);
+	entities[7]->GetTransform()->MoveAbsolute(0,0,-24);
+
+	entities[8]->GetTransform()->MoveAbsolute(8,.5f,-27);
+
+	entities[9]->GetTransform()->MoveAbsolute(-9,.5f,-22);
+
+	entities[10]->GetTransform()->MoveAbsolute(-6,.5f,-34);
 }
 
 // --------------------------------------------------------

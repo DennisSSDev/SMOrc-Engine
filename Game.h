@@ -48,6 +48,15 @@ private:
 	ID3D11ShaderResourceView* srvCushionNormal;
 	ID3D11SamplerState* textureSampler;
 
+	/*
+	Stealth Game Related textures go here
+	*/
+	ID3D11ShaderResourceView* srvBlueprintDefault;
+	ID3D11ShaderResourceView* srvBlueprintOrange;
+	ID3D11ShaderResourceView* srvBlueprintBlue;
+	ID3D11ShaderResourceView* srvBlueprintGray;
+	ID3D11ShaderResourceView* srvBlueprintGreen;
+
 	std::vector<class Entity*> entities;
 	std::vector<class Material*> materials;
 	std::vector<class Mesh*> meshes;
