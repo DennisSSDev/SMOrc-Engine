@@ -26,9 +26,7 @@ float4 main(VertexToPixel input) : SV_TARGET
 	pixelData.worldPos = input.worldPos;
 	pixelData.shininess = shininess;
 
-	int count = 4;
-
-	for (int i = 0; i < count; i++) 
+	for (int i = 0; i < lightCount; i++) 
 	{
 		// point light diffuse & spec
 		switch(lights[i].type) 

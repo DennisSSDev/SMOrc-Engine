@@ -5,7 +5,7 @@
 #include <vector>
 #include "Lights.h"
 
-#define MAX_LIGHTS 64
+#define MAX_LIGHTS_IN_SCENE 128
 
 #define LIGHT_TYPE_DIR 0
 #define LIGHT_TYPE_POINT 1

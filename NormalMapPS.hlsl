@@ -39,7 +39,7 @@ float4 main( V2P_NormalMap input ) : SV_TARGET
 	pixelData.worldPos = input.worldPos;
 	pixelData.shininess = shininess;
 
-	for (int i = 0; i < 4; i++) 
+	for (int i = 0; i < lightCount; i++) 
 	{
 		// point light diffuse & spec
 		switch(lights[i].type) 

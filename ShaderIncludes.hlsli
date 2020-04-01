@@ -15,10 +15,10 @@ struct Light
 	float intensity;
 
 	float3 direction;
-	float radius;
+	float range;
 
 	float3 position;
-	uint type;
+	int type;
 
 	float spotFalloff;
 	float3 pad;
@@ -90,6 +90,17 @@ float SpecularPhong(float3 normal, float3 lightDir, float3 dirToCamera, float ex
 	return pow(saturate(dot(refl, dirToCamera)), exp);
 }
 
+float Attenuate(Light light, float3 worldPos)
+{
+	float dist = distance(light.position, worldPos);
+
+	// Ranged-based attenuation
+	float att = saturate(1.0f - (dist * dist / (light.range * light.range)));
+
+	// Soft falloff
+	return att * att;
+}
+
 float3 OutputFinalLight(float diffuse, float spec, float materialShininess, Light light) 
 {
 	spec *= any(diffuse);
@@ -101,10 +112,11 @@ float3 PointLight(PixelData pixelData, float3 cameraPosition, Light light)
 	float3 toCamera = normalize(cameraPosition - pixelData.worldPos);
 	float3 pointLightDirection = normalize(pixelData.worldPos - light.position);
 
+	float atten = Attenuate(light, pixelData.worldPos);
 	float diffuse = Diffuse(pixelData.normal, pointLightDirection);
 	float spec = SpecularPhong(pixelData.normal, pointLightDirection, toCamera, 64.0f);
 
-	return OutputFinalLight(diffuse, spec, pixelData.shininess, light);
+	return OutputFinalLight(diffuse, spec, pixelData.shininess, light) * atten;
 }
 
 float3 DirectionLight(PixelData pixelData, float3 cameraPosition, Light light)

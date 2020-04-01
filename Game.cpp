@@ -106,14 +106,11 @@ Game::~Game()
 // --------------------------------------------------------
 void Game::Init()
 {
-	// Helper methods for loading shaders, creating some basic
-	// geometry to draw and some simple camera matrices.
-	//  - You'll be expanding and/or replacing these later
 	LoadShaders();
 
 	CreateBasicGeometry();
 
-	lights = new Light[MAX_LIGHTS];
+	lights = new Light[MAX_LIGHTS_IN_SCENE];
 
 	playerCamera = new Camera(XMFLOAT3(0,0,-4.f), XMFLOAT3(0,0,0), (float)this->width / this->height);
 
@@ -122,24 +119,61 @@ void Game::Init()
 	// Essentially: "What kind of shape should the GPU draw with our data?"
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	lights[lightsInScene].color = XMFLOAT3(1.f, 1.f, 1.f);
-	lights[lightsInScene].direction = XMFLOAT3(1, -1, 0);
-	lights[lightsInScene].type = LIGHT_TYPE_DIR;
-	lights[lightsInScene++].intensity = 1.f;
+	/**
+	 * Scene Light definitions
+	 */
 
 	lights[lightsInScene].color = XMFLOAT3(.65f, .2f, .3f);
 	lights[lightsInScene].type = LIGHT_TYPE_POINT;
-	lights[lightsInScene].intensity = 1.f;
+	lights[lightsInScene].range = 5.f;
+	lights[lightsInScene].intensity = 2.f;
 	lights[lightsInScene++].position = XMFLOAT3(0, 0, 0);
 
 	lights[lightsInScene].color = XMFLOAT3(1.f, 1.f, 1.f);
-	lights[lightsInScene].direction = XMFLOAT3(-1, -1, -1);
-	lights[lightsInScene].type = LIGHT_TYPE_DIR;
-	lights[lightsInScene++].intensity = 1.f;
+	lights[lightsInScene].type = LIGHT_TYPE_POINT;
+	lights[lightsInScene].range = 4.f;
+	lights[lightsInScene].intensity = 2.f;
+	lights[lightsInScene++].position = XMFLOAT3(-7.5f, 3.f, 7.5f);
+
+	lights[lightsInScene].color = XMFLOAT3(1.f, 1.f, 1.f);
+	lights[lightsInScene].type = LIGHT_TYPE_POINT;
+	lights[lightsInScene].range = 2.5f;
+	lights[lightsInScene].intensity = 2.f;
+	lights[lightsInScene++].position = XMFLOAT3(-5.f, 1.85f, 1.f);
+
+	lights[lightsInScene].color = XMFLOAT3(1.f, 1.f, 1.f);
+	lights[lightsInScene].type = LIGHT_TYPE_POINT;
+	lights[lightsInScene].range = 3.f;
+	lights[lightsInScene].intensity = 1.5f;
+	lights[lightsInScene++].position = XMFLOAT3(-5.f, 1.85f, -11.f);
+
+	lights[lightsInScene].color = XMFLOAT3(1.f, 1.f, 1.f);
+	lights[lightsInScene].type = LIGHT_TYPE_POINT;
+	lights[lightsInScene].range = 4.5f;
+	lights[lightsInScene].intensity = 1.f;
+	lights[lightsInScene++].position = XMFLOAT3(5.f, 2.5f, -20.f);
+
+	lights[lightsInScene].color = XMFLOAT3(1.f, 1.f, 1.f);
+	lights[lightsInScene].type = LIGHT_TYPE_POINT;
+	lights[lightsInScene].range = 4.f;
+	lights[lightsInScene].intensity = 1.f;
+	lights[lightsInScene++].position = XMFLOAT3(5.f, 2.5f, -33.f);
+
+	lights[lightsInScene].color = XMFLOAT3(.5f, 1.f, .9f);
+	lights[lightsInScene].type = LIGHT_TYPE_POINT;
+	lights[lightsInScene].range = 4.f;
+	lights[lightsInScene].intensity = 1.f;
+	lights[lightsInScene++].position = XMFLOAT3(-4.5f, 2.5f, -34.5f);
+
+	lights[lightsInScene].color = XMFLOAT3(.98f, .85f, .85f);
+	lights[lightsInScene].type = LIGHT_TYPE_POINT;
+	lights[lightsInScene].range = 4.5f;
+	lights[lightsInScene].intensity = 1.f;
+	lights[lightsInScene++].position = XMFLOAT3(-11.5f, 2.5f, -26.5f);
 
 	lights[lightsInScene].color = XMFLOAT3(1.f, 1.f, 1.f);
 	lights[lightsInScene].type = LIGHT_TYPE_AMBIENT;
-	lights[lightsInScene++].intensity = 1.f;
+	lights[lightsInScene++].intensity = .1f;
 
 	// all the initialization for the engine has to be done prior to this. Now the game specific stuff needs to initialize
 	BeginPlay();
