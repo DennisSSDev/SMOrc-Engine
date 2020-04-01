@@ -5,6 +5,13 @@
 #include <vector>
 #include "Lights.h"
 
+#define MAX_LIGHTS 64
+
+#define LIGHT_TYPE_DIR 0
+#define LIGHT_TYPE_POINT 1
+#define LIGHT_TYPE_SPOT 2
+#define LIGHT_TYPE_AMBIENT 3
+
 class Mesh;
 class Entity;
 class Camera;
@@ -61,9 +68,8 @@ private:
 	std::vector<class Material*> materials;
 	std::vector<class Mesh*> meshes;
 
-	struct Light dirLight;
-	struct Light pointLight;
-	struct Light dirLight3;
+	struct Light* lights = nullptr; // all the lights
+	int lightsInScene = 0;
 
 	class Camera* playerCamera = nullptr;
 

@@ -4,12 +4,12 @@
 
 struct Light
 {
-	DirectX::XMFLOAT3 ambientColor;
-	float ambientIntensity;
-	DirectX::XMFLOAT3 diffuseColor;
-	float diffuseIntensity;
+	DirectX::XMFLOAT3 color;
+	float intensity;
 	DirectX::XMFLOAT3 direction;
-	float padding2;
+	float radius;
 	DirectX::XMFLOAT3 position;
 	UINT type;
+	float spotFalloff;
+	DirectX::XMFLOAT3 pad;
 };

@@ -39,7 +39,6 @@ void Entity::Draw(ID3D11DeviceContext* context, Camera* mainCamera)
 	vs->SetMatrix4x4("world", transform.GetWorldMatrix());
 	vs->SetMatrix4x4("view", mainCamera->GetViewMatrix());
 	vs->SetMatrix4x4("proj", mainCamera->GetProjectionMatrix());
-
 	vs->CopyAllBufferData();
 
 	ps->SetFloat("shininess", material->GetShininess());

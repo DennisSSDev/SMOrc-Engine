@@ -2,15 +2,15 @@
 
 cbuffer ExternalData : register(b0) 
 {
-	Light dirLight;
-	Light pointLight;
-	Light dirLight3;
+	Light lights[MAX_LIGHTS];
+	int lightCount;
 
 	float3 cameraPosition;
 	float shininess;
 }
 
 Texture2D diffuseTexture: register(t0);
+
 SamplerState samplerOptions: register(s0);
 
 float4 main(VertexToPixel input) : SV_TARGET
@@ -19,9 +19,40 @@ float4 main(VertexToPixel input) : SV_TARGET
 
 	input.color = diffuseTexture.Sample(samplerOptions, input.uv) * input.color;
 
-	float4 light1 = CalculateLight(input.normal, input.color, input.worldPos, dirLight, cameraPosition, shininess);
-	float4 light2 = CalculateLight(input.normal, input.color, input.worldPos, pointLight, cameraPosition, shininess);
-	float4 light3 = CalculateLight(input.normal, input.color, input.worldPos, dirLight3, cameraPosition, shininess);
+	float3 finalLight = float3(0,0,0);
 
-	return (light1 + light2 + light3);
+	PixelData pixelData;
+	pixelData.normal = input.normal;
+	pixelData.worldPos = input.worldPos;
+	pixelData.shininess = shininess;
+
+	int count = 4;
+
+	for (int i = 0; i < count; i++) 
+	{
+		// point light diffuse & spec
+		switch(lights[i].type) 
+		{
+		case LIGHT_TYPE_POINT:
+			///
+			finalLight += PointLight(pixelData, cameraPosition, lights[i]);
+			///
+			break;
+		case LIGHT_TYPE_DIR:
+			///
+			finalLight += DirectionLight(pixelData, cameraPosition, lights[i]);
+			///
+			break;
+		case LIGHT_TYPE_SPOT:
+			// @todo
+			break;
+		case LIGHT_TYPE_AMBIENT:
+			///
+			finalLight += AmbientLight(lights[i]);
+			///
+			break;
+		}
+	}
+
+	return float4(finalLight * (float3)input.color, 1);
 }

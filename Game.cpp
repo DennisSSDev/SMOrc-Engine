@@ -96,6 +96,8 @@ Game::~Game()
 
 	delete normalVS;
 	delete normalPS;
+
+	delete[] lights;
 }
 
 // --------------------------------------------------------
@@ -111,6 +113,8 @@ void Game::Init()
 
 	CreateBasicGeometry();
 
+	lights = new Light[MAX_LIGHTS];
+
 	playerCamera = new Camera(XMFLOAT3(0,0,-4.f), XMFLOAT3(0,0,0), (float)this->width / this->height);
 
 	// Tell the input assembler stage of the pipeline what kind of
@@ -118,26 +122,24 @@ void Game::Init()
 	// Essentially: "What kind of shape should the GPU draw with our data?"
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	dirLight.ambientColor = XMFLOAT3(0.25f, 0.23f, 0.1f);
-	dirLight.diffuseColor = XMFLOAT3(1.f, 1.f, 1.f);
-	dirLight.direction = XMFLOAT3(1, -1, 0);
-	dirLight.type = 0;
-	dirLight.ambientIntensity = 1.f;
-	dirLight.diffuseIntensity = 1.f;
+	lights[lightsInScene].color = XMFLOAT3(1.f, 1.f, 1.f);
+	lights[lightsInScene].direction = XMFLOAT3(1, -1, 0);
+	lights[lightsInScene].type = LIGHT_TYPE_DIR;
+	lights[lightsInScene++].intensity = 1.f;
 
-	pointLight.ambientColor = XMFLOAT3(0.1f, 0.1f, 0.1f);
-	pointLight.diffuseColor = XMFLOAT3(.65f, .2f, .3f);
-	pointLight.type = 1;
-	pointLight.ambientIntensity = 0.5f;
-	pointLight.diffuseIntensity = 1.f;
-	pointLight.position = XMFLOAT3(0, 0, 0);
+	lights[lightsInScene].color = XMFLOAT3(.65f, .2f, .3f);
+	lights[lightsInScene].type = LIGHT_TYPE_POINT;
+	lights[lightsInScene].intensity = 1.f;
+	lights[lightsInScene++].position = XMFLOAT3(0, 0, 0);
 
-	dirLight3.ambientColor = XMFLOAT3(0.1f, 0.1f, 0.1f);
-	dirLight3.diffuseColor = XMFLOAT3(1.f, 1.f, 1.f);
-	dirLight3.direction = XMFLOAT3(-1, -1, -1);
-	dirLight3.type = 0;
-	dirLight3.ambientIntensity = 1.f;
-	dirLight3.diffuseIntensity = 1.f;
+	lights[lightsInScene].color = XMFLOAT3(1.f, 1.f, 1.f);
+	lights[lightsInScene].direction = XMFLOAT3(-1, -1, -1);
+	lights[lightsInScene].type = LIGHT_TYPE_DIR;
+	lights[lightsInScene++].intensity = 1.f;
+
+	lights[lightsInScene].color = XMFLOAT3(1.f, 1.f, 1.f);
+	lights[lightsInScene].type = LIGHT_TYPE_AMBIENT;
+	lights[lightsInScene++].intensity = 1.f;
 
 	// all the initialization for the engine has to be done prior to this. Now the game specific stuff needs to initialize
 	BeginPlay();
@@ -325,6 +327,7 @@ void Game::BeginPlay()
 	entities[9]->GetTransform()->MoveAbsolute(-9,.5f,-22);
 
 	entities[10]->GetTransform()->MoveAbsolute(-6,.5f,-34);
+
 }
 
 // --------------------------------------------------------
@@ -394,17 +397,23 @@ void Game::Draw(float deltaTime, float totalTime)
 		1.0f,
 		0);
 
+	// since they are all shared we don't need to individually set it per entity
+	normalPS->SetData("lights", (void*)(lights), sizeof(Light) * lightsInScene);
+	normalPS->SetInt("lightCount", lightsInScene);
+	normalPS->SetFloat3("cameraPosition", playerCamera->GetTransform()->GetPosition());
+	normalPS->CopyAllBufferData();
+
+	pixelShader->SetData("lights", (void*)(lights), sizeof(Light) * lightsInScene);
+	pixelShader->SetInt("lightCount", lightsInScene);
+	pixelShader->SetFloat3("cameraPosition", playerCamera->GetTransform()->GetPosition());
+	pixelShader->CopyAllBufferData();
+
 	for (Entity* entity : entities)
 	{
+		// detect if light affects the material
 		Material* entityMat = entity->GetMaterial();
 		entityMat->GetVertexShader()->SetShader();
 		entityMat->GetPixelShader()->SetShader();
-		
-		entityMat->GetPixelShader()->SetData("dirLight", &dirLight, sizeof(Light));
-		entityMat->GetPixelShader()->SetData("pointLight", &pointLight, sizeof(Light));
-		entityMat->GetPixelShader()->SetData("dirLight3", &dirLight3, sizeof(Light));
-		entityMat->GetPixelShader()->SetFloat3("cameraPosition", playerCamera->GetTransform()->GetPosition());
-		entityMat->GetPixelShader()->CopyAllBufferData();
 
 		entity->Draw(context.Get(), playerCamera);
 	}

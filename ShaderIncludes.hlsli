@@ -1,21 +1,35 @@
 #ifndef __GGP_SHADER_INCLUDES__
 #define __GGP_SHADER_INCLUDES__ 
 
-// STRUCTS
+// this is the maximum a shader can hold for light processing
+#define MAX_LIGHTS 128 
+
+#define LIGHT_TYPE_DIR 0
+#define LIGHT_TYPE_POINT 1
+#define LIGHT_TYPE_SPOT 2
+#define LIGHT_TYPE_AMBIENT 3
 
 struct Light 
 {
-	float3 ambientColor;
-	float ambientIntensity;
-
-	float3 diffuseColor;
-	float diffuseIntensity;
+	float3 color;
+	float intensity;
 
 	float3 direction;
-	// pad 1
+	float radius;
 
 	float3 position;
 	uint type;
+
+	float spotFalloff;
+	float3 pad;
+};
+
+// Doesn't exist inside constant buffers - thus an be unaligned
+struct PixelData 
+{
+	float3 worldPos; // pixel position in world space
+	float shininess; // how shiny is the pixel
+	float3 normal; // the normal of the pixel
 };
 
 struct VertexShaderInput
@@ -76,33 +90,79 @@ float SpecularPhong(float3 normal, float3 lightDir, float3 dirToCamera, float ex
 	return pow(saturate(dot(refl, dirToCamera)), exp);
 }
 
-float4 CalculateLight(float3 normal, float4 surfaceColor, float3 worldPos, Light light, float3 cameraPosition, float shininess) 
+float3 OutputFinalLight(float diffuse, float spec, float materialShininess, Light light) 
 {
-	// directional diffuse
-	float diffuse = 0;
+	spec *= any(diffuse);
+	return ( (diffuse + ( materialShininess * spec ) ) * (light.intensity * light.color)); // optimized for superscalar
+}
 
-	// specular of the the material (how shiny it is)
-	float spec = 0;
+float3 PointLight(PixelData pixelData, float3 cameraPosition, Light light) 
+{
+	float3 toCamera = normalize(cameraPosition - pixelData.worldPos);
+	float3 pointLightDirection = normalize(pixelData.worldPos - light.position);
 
+	float diffuse = Diffuse(pixelData.normal, pointLightDirection);
+	float spec = SpecularPhong(pixelData.normal, pointLightDirection, toCamera, 64.0f);
+
+	return OutputFinalLight(diffuse, spec, pixelData.shininess, light);
+}
+
+float3 DirectionLight(PixelData pixelData, float3 cameraPosition, Light light)
+{
+	float3 toCamera = normalize(cameraPosition - pixelData.worldPos);
+
+	float diffuse = Diffuse(pixelData.normal, light.direction);
+	float spec = SpecularPhong(pixelData.normal, normalize(light.direction), toCamera, 64.0f);
+
+	return OutputFinalLight(diffuse, spec, pixelData.shininess, light);
+}
+
+float3 AmbientLight(Light light) 
+{
+	return light.intensity * light.color;
+}
+
+/*
+ * Deprecated Function
+ * Use only for testing
+*/
+float4 CalculateLights(float3 normal, float4 surfaceColor, float3 worldPos, Light lights[64], float3 cameraPosition, float shininess, int lightCount) 
+{
 	// vector from world space pixel pos to camera world world space position
 	float3 toCamera = normalize(cameraPosition - worldPos);
+	float3 finalLight = float3(0,0,0);
 
-	// point light diffuse & spec
-	if(light.type == 1) 
+	for (int i = 0; i < lightCount; i++) 
 	{
-		float3 pointLightDirection = normalize(worldPos - light.position);
-		diffuse = Diffuse(normal, pointLightDirection);
-		spec = SpecularPhong(normal, pointLightDirection, toCamera, 64.0f);
+		// directional diffuse
+		float diffuse = 0;
+
+		// specular of the the material (how shiny it is)
+		float spec = 0;
+		
+		// point light diffuse & spec
+		switch(lights[i].type) 
+		{
+		case LIGHT_TYPE_POINT:
+			float3 pointLightDirection = normalize(worldPos - lights[i].position);
+			diffuse = Diffuse(normal, pointLightDirection);
+			spec = SpecularPhong(normal, pointLightDirection, toCamera, 64.0f);
+			break;
+		case LIGHT_TYPE_DIR:
+			diffuse = Diffuse(normal, lights[i].direction);
+			spec = SpecularPhong(normal, normalize(lights[i].direction), toCamera, 64.0f);
+			break;
+		case LIGHT_TYPE_SPOT:
+			// @todo
+			break;
+		case LIGHT_TYPE_AMBIENT:
+			diffuse = 1.0f;
+			spec = 0;
+			break;
+		}
+		spec *= any(diffuse);
+		finalLight += ( (diffuse + ( shininess * spec ) ) * lights[i].intensity * lights[i].color);
 	}
-	// dir light diffuse & spec
-	else 
-	{
-		diffuse = Diffuse(normal, light.direction);
-		// make sure to normalize the light direction, otherwise the highlights are off
-		spec = SpecularPhong(normal, normalize(light.direction), toCamera, 64.0f);
-	}
-	spec *= any(diffuse);
-	float3 finalLight = ( (diffuse + ( shininess * spec ) ) * light.diffuseIntensity * light.diffuseColor) + (light.ambientColor * light.ambientIntensity);
 
 	// @todo: think if you actually want to consider the surfaceColor here with the specular
 	// @todo: specular lights will overlap each other, consider abstracting each light's specular and multiplying them all together
