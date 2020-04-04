@@ -134,6 +134,16 @@ float3 AmbientLight(Light light)
 	return light.intensity * light.color;
 }
 
+float3 SpotLight(PixelData pixelData, float3 cameraPosition, Light light)
+{
+	// Calculate the spot falloff
+	float3 toLight = normalize(light.position - pixelData.worldPos);
+	float penumbra = pow(saturate(dot(-toLight, light.direction)), light.spotFalloff);
+	
+	// Combine with the point light calculation
+	return PointLight(pixelData, cameraPosition, light) * penumbra;
+}
+
 /*
  * Deprecated Function
  * Use only for testing

@@ -42,7 +42,9 @@ float4 main(VertexToPixel input) : SV_TARGET
 			///
 			break;
 		case LIGHT_TYPE_SPOT:
-			// @todo
+			///
+			finalLight += SpotLight(pixelData, cameraPosition, lights[i]);
+			///
 			break;
 		case LIGHT_TYPE_AMBIENT:
 			///
