@@ -10,39 +10,39 @@ Description : Implementation for structures defined in InputBinding.h
 namespace Input {
     // Default Binding Constructor
     Binding::Binding() :
-        m_KeyCode(0),
-        m_KeyState(KeyState::JustReleased)
+        keyCode(0),
+        keyState(KeyState::JustReleased)
     {};
 
     // Create Binding from keycode and keystate
-    Binding::Binding(const unsigned int a_keyCode, const KeyState a_keyState) :
-        m_KeyCode(a_keyCode),
-        m_KeyState(a_keyState)
+    Binding::Binding(const unsigned int pkeyCode, const KeyState pkeyState) :
+        keyCode(pkeyCode),
+        keyState(pkeyState)
     {};
 
     // Default Chord Constructor
     Chord::Chord() :
-        m_Name(L""),
-        m_Chord(0)
+        name(L""),
+        chord(0)
     {};
 
     // Create Chord from Name, create binding from keycode and keystate and add it to Chord structure
-    Chord::Chord(const std::wstring& a_Name, const unsigned int a_keyCode, const KeyState a_keyState) :
-        m_Name(a_Name)
+    Chord::Chord(const std::wstring& pName, const unsigned int pkeyCode, const KeyState pkeyState) :
+        name(pName)
     {
-        m_Chord.push_back(Binding(a_keyCode, a_keyState));
+        chord.push_back(Binding(pkeyCode, pkeyState));
     }
 
     // Create Chord from Name and Binding&
-    Chord::Chord(const std::wstring& a_Name, const Binding& a_Binding) :
-        m_Name(a_Name)
+    Chord::Chord(const std::wstring& pName, const Binding& pBinding) :
+        name(pName)
     {
-        m_Chord.push_back(a_Binding);
+        chord.push_back(pBinding);
     }
 
     // Create Chord from Name and vector of Bindings
-    Chord::Chord(const std::wstring& a_Name, const std::vector<Binding>& a_lBinding) :
-        m_Name(a_Name),
-        m_Chord(a_lBinding)
+    Chord::Chord(const std::wstring& pName, const std::vector<Binding>& plBinding) :
+        name(pName),
+        chord(plBinding)
     {};
 }
