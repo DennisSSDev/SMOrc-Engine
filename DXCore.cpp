@@ -377,6 +377,9 @@ HRESULT DXCore::Run()
 	// Give subclass a chance to initialize
 	Init();
 
+	// After game is initialized, create an input system
+	mInput = new Input::InputSystem();
+
 	// Our overall game and message loop
 	MSG msg = {};
 	while (msg.message != WM_QUIT)
@@ -627,6 +630,14 @@ LRESULT DXCore::ProcessMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 	// Check the incoming message and handle any we care about
 	switch (uMsg)
 	{
+	// OnMouseMove updates the mouse's currentPosition
+	case WM_MOUSEMOVE:
+		POINTS pt = MAKEPOINTS(lParam);
+
+		if(mInput)
+			mInput->OnMouseMove(pt.x, pt.y);
+		return 0;
+
 	// This is the message that signifies the window closing
 	case WM_DESTROY:
 		PostQuitMessage(0); // Send a quit message to our own program

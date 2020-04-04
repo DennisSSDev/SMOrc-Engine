@@ -5,6 +5,9 @@
 #include <string>
 #include <wrl/client.h> // Used for ComPtr - a smart pointer for COM objects
 
+// Base DXCore holds the owning pointer to the input wrangler
+#include "InputSystem.h"
+
 // We can include the correct library files here
 // instead of in Visual Studio settings if we want
 #pragma comment(lib, "d3d11.lib")
@@ -77,6 +80,8 @@ protected:
 	std::string GetFullPathTo(std::string relativeFilePath);
 	std::wstring GetFullPathTo_Wide(std::wstring relativeFilePath);
 
+	// Input System
+	Input::InputSystem* mInput;
 
 private:
 	// Timing related data

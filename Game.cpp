@@ -386,6 +386,9 @@ void Game::Update(float deltaTime, float totalTime)
 	if (GetAsyncKeyState(VK_ESCAPE))
 		Quit();
 
+	// Handle input
+	mInput->Frame(deltaTime, playerCamera);
+
 	if(entities.size() == 0) 
 	{
 		return;
@@ -410,7 +413,7 @@ void Game::Update(float deltaTime, float totalTime)
 
 	entities[4]->GetTransform()->Rotate(0, 0,  offset*2.f);
 
-	playerCamera->Update(deltaTime, hWnd);
+	playerCamera->UpdateViewMatrix();
 }
 
 // --------------------------------------------------------

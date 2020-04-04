@@ -21,11 +21,12 @@ public:
 
 	void UpdateProjectionMatrix(float aspectRatio);
 	void UpdateViewMatrix();
-	void Update(float dt, HWND windowHandle);
 
-	inline DirectX::XMFLOAT4X4 GetProjectionMatrix() { return projMatrix; };
-	inline DirectX::XMFLOAT4X4 GetViewMatrix() { return viewMatrix; };
+	inline DirectX::XMFLOAT4X4 GetProjectionMatrix() const { return projMatrix; };
+	inline DirectX::XMFLOAT4X4 GetViewMatrix() const { return viewMatrix; };
 	inline Transform* GetTransform() { return &transform; }
+	inline float GetSensitivity() const { return mouseLookSpeed; }
+	inline float GetMovementSpeed() const { return movementSpeed; }
 private:
 	Transform transform;
 	DirectX::XMFLOAT4X4 viewMatrix;
