@@ -123,6 +123,14 @@ void Game::Init()
 	 * Scene Light definitions
 	 */
 
+	lights[lightsInScene].color = XMFLOAT3(1.0f, 0.2f, 0.2f);
+	lights[lightsInScene].type = LIGHT_TYPE_SPOT;
+	lights[lightsInScene].direction = XMFLOAT3(0.f, 1.f, 0.f);
+	lights[lightsInScene].range = 4.f;
+	lights[lightsInScene].intensity = 1.f;
+	lights[lightsInScene].spotFalloff = 25.f;
+	lights[lightsInScene++].position = XMFLOAT3(-4.5f, 2.5f, -34.5f);
+
 	lights[lightsInScene].color = XMFLOAT3(.65f, .2f, .3f);
 	lights[lightsInScene].type = LIGHT_TYPE_POINT;
 	lights[lightsInScene].range = 5.f;
