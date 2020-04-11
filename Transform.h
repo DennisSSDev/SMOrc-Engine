@@ -6,7 +6,7 @@ class Transform
 {
 public:
 	Transform();
-	~Transform();
+	~Transform() = default;
 
 	void SetPosition(float x, float y, float z);
 	void SetRotation(float pitch, float yaw, float roll);
@@ -23,6 +23,8 @@ public:
 	void MoveRelative(float x,float y,float z);
 	void Rotate(float pitch, float yaw, float roll);
 	void Scale(float x, float y, float z);
+
+	float DistanceSquaredTo(DirectX::XMFLOAT3 position);
 
 private:
 

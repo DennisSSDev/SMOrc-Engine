@@ -12,11 +12,6 @@ Transform::Transform()
 	quaternionRotation = XMFLOAT4(0,0,0,1);
 }
 
-Transform::~Transform()
-{
-
-}
-
 void Transform::SetPosition(float x, float y, float z)
 {
 	worldPosition = XMFLOAT3(x, y, z);
@@ -99,6 +94,16 @@ void Transform::Scale(float x, float y, float z)
 	localScale.z *= z;
 
 	MarkAsDirty();
+}
+
+float Transform::DistanceSquaredTo(DirectX::XMFLOAT3 position)
+{
+	DirectX::XMVECTOR vec1 = DirectX::XMLoadFloat3(&position);
+	DirectX::XMVECTOR vec2 = DirectX::XMLoadFloat3(&this->worldPosition);
+	DirectX::XMVECTOR vec3 = DirectX::XMVectorSubtract(vec1, vec2);
+	float distSqrd;
+	DirectX::XMStoreFloat(&distSqrd, DirectX::XMVector3LengthSq(vec3));
+	return distSqrd;
 }
 
 void Transform::CalculateWorldMatrix()

@@ -6,6 +6,7 @@
 #include "Material.h"
 #include "SimpleShader.h"
 #include "WICTextureLoader.h"
+#include <algorithm>
 #include <ppl.h>
 
 using namespace Concurrency;
@@ -76,6 +77,33 @@ Game::~Game()
 		static_partitioner()
 	);
 
+	parallel_for
+	(
+		size_t(0), ghosts.size(), [&](size_t i)
+		{
+			delete ghosts[i];
+		},
+		static_partitioner()
+	);
+
+	parallel_for
+	(
+		size_t(0), route1.size(), [&](size_t i)
+		{
+			delete route1[i];
+		},
+		static_partitioner()
+	);
+
+	parallel_for
+	(
+		size_t(0), route2.size(), [&](size_t i)
+		{
+			delete route2[i];
+		},
+		static_partitioner()
+	);
+
 	srvBrick->Release();
 	srvMetal->Release();
 	srvRock->Release();
@@ -90,12 +118,17 @@ Game::~Game()
 	srvBlueprintDefault->Release();
 	srvBlueprintGreen->Release();
 
+	blendState->Release();
+
 	delete playerCamera;
+
 	delete pixelShader;
 	delete vertexShader;
 
 	delete normalVS;
 	delete normalPS;
+
+	delete solidColorTransparentPS;
 
 	delete[] lights;
 }
@@ -202,6 +235,28 @@ void Game::LoadShaders()
 
 	normalVS = new SimpleVertexShader(device.Get(), context.Get(), GetFullPathTo_Wide(L"NormalMapVS.cso").c_str());
 	normalPS = new SimplePixelShader(device.Get(), context.Get(), GetFullPathTo_Wide(L"NormalMapPS.cso").c_str());
+
+	solidColorTransparentPS = new SimplePixelShader(device.Get(), context.Get(), GetFullPathTo_Wide(L"SolidColorTransparentShader.cso").c_str());
+
+	// Make the blend state for basic alpha blending
+	D3D11_BLEND_DESC blendDesc = {};
+	blendDesc.AlphaToCoverageEnable = false;
+	blendDesc.IndependentBlendEnable = false;
+	blendDesc.RenderTarget[0].BlendEnable = true;
+
+	// Define how to blend RGB components
+	blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+	blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+	blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+
+	// Define how to blend the alpha channel
+	blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+	blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ONE;
+	blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+
+	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+
+	device->CreateBlendState(&blendDesc, &blendState);
 }
 
 
@@ -226,6 +281,9 @@ void Game::CreateBasicGeometry()
 	meshes.push_back(new Mesh(GetFullPathTo("../../Assets/Models/RoomAssets/Doorway.obj").c_str(), device.Get()));
 	meshes.push_back(new Mesh(GetFullPathTo("../../Assets/Models/RoomAssets/Prism.obj").c_str(), device.Get()));
 	meshes.push_back(new Mesh(GetFullPathTo("../../Assets/Models/RoomAssets/Pipe.obj").c_str(), device.Get()));
+
+	// ghost model
+	meshes.push_back(new Mesh(GetFullPathTo("../../Assets/Models/Enemies/inky.obj").c_str(), device.Get()));
 
 	D3D11_SAMPLER_DESC sampDesc = {};
 	sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
@@ -316,6 +374,11 @@ void Game::CreateBasicGeometry()
 	materials.push_back(new Material(XMFLOAT4(1.f, 1.f, 1.f, 1.f), 0.f, srvBlueprintOrange, textureSampler, vertexShader, pixelShader));
 	materials.push_back(new Material(XMFLOAT4(1.f, 1.f, 1.f, 1.f), 0.f, srvBlueprintGreen, textureSampler, vertexShader, pixelShader));
 
+	// transparent material
+	materials.push_back(new Material(XMFLOAT4(1.f, .1f, .1f, .5f), 0.f, vertexShader, solidColorTransparentPS));
+
+	materials.push_back(new Material(XMFLOAT4(1.f, 1.f, 0.f, 1.f), 0.f, vertexShader, solidColorTransparentPS));
+
 	// setup entities
 	entities.push_back(new Entity(meshes[0], materials[0]));
 	entities.push_back(new Entity(meshes[1], materials[1]));
@@ -340,6 +403,29 @@ void Game::CreateBasicGeometry()
 	entities.push_back(new Entity(meshes[9], materials[8]));
 	//pipe
 	entities.push_back(new Entity(meshes[10], materials[9]));
+
+	// Ghost
+	ghosts.push_back(new Entity(meshes[11], materials[10]));
+	ghosts.push_back(new Entity(meshes[11], materials[10]));
+
+	/**
+	 * The first route for the right side of the room
+	 */
+	
+	route1.push_back(new Entity(meshes[0], materials[11]));
+	route1.push_back(new Entity(meshes[0], materials[11]));
+	route1.push_back(new Entity(meshes[0], materials[11]));
+	route1.push_back(new Entity(meshes[0], materials[11]));
+	route1.push_back(new Entity(meshes[0], materials[11]));
+
+	route2.push_back(new Entity(meshes[0], materials[11]));
+	route2.push_back(new Entity(meshes[0], materials[11]));
+	route2.push_back(new Entity(meshes[0], materials[11]));
+	route2.push_back(new Entity(meshes[0], materials[11]));
+	route2.push_back(new Entity(meshes[0], materials[11]));
+
+	
+	bDrawWaypoints = true;
 }
 
 
@@ -370,7 +456,64 @@ void Game::BeginPlay()
 
 	entities[10]->GetTransform()->MoveAbsolute(-6,.5f,-34);
 
+	ghosts[0]->GetTransform()->MoveAbsolute(-6.f, .5f, -30.f);
+	ghosts[1]->GetTransform()->MoveAbsolute(-3.f,.5f, -24.f);
+	ghostTransform = ghosts[0]->GetTransform();
+	
+	route1[0]->GetTransform()->MoveAbsolute(-8.5f, 1.5f, -35.f);
+	route1[0]->GetTransform()->SetScale(.25f, .25f, .25f);
+
+	route1[1]->GetTransform()->MoveAbsolute(-15.f, 1.5f, -35.f);
+	route1[1]->GetTransform()->SetScale(.25f, .25f, .25f);
+
+	route1[2]->GetTransform()->MoveAbsolute(-16.f, 1.5f, -30.f);
+	route1[2]->GetTransform()->SetScale(.25f, .25f, .25f);
+
+	route1[3]->GetTransform()->MoveAbsolute(-8.f, 1.5f, -27.f);
+	route1[3]->GetTransform()->SetScale(.25f, .25f, .25f);
+
+	route1[4]->GetTransform()->MoveAbsolute(-2.f, 1.5f, -29.f);
+	route1[4]->GetTransform()->SetScale(.25f, .25f, .25f);
+
+	route2[0]->GetTransform()->MoveAbsolute(-2.f, 1.5f, -20.f);
+	route2[0]->GetTransform()->SetScale(.25f, .25f, .25f);
+
+	route2[1]->GetTransform()->MoveAbsolute(0.f, 1.5f, -13.5f);
+	route2[1]->GetTransform()->SetScale(.25f, .25f, .25f);
+
+	route2[2]->GetTransform()->MoveAbsolute(-8.f, 1.5f, -12.f);
+	route2[2]->GetTransform()->SetScale(.25f, .25f, .25f);
+
+	route2[3]->GetTransform()->MoveAbsolute(-16.3f, 1.5f, -14.f);
+	route2[3]->GetTransform()->SetScale(.25f, .25f, .25f);
+
+	route2[4]->GetTransform()->MoveAbsolute(-13.5f, 1.5f, -20.f);
+	route2[4]->GetTransform()->SetScale(.25f, .25f, .25f);
 }
+
+// ghosts are all transparent
+
+void Game::SortAndRenderTransparentEntities()
+{
+	ghosts[0]->GetMaterial()->GetVertexShader()->SetShader();
+	ghosts[0]->GetMaterial()->GetPixelShader()->SetShader();
+	// Turn on the blend state
+	context->OMSetBlendState(blendState, 0, UINT_MAX);
+
+	auto camTransform = playerCamera->GetTransform();
+	std::sort(ghosts.begin(), ghosts.end(), [&](const auto& lhs, const auto& rhs)
+		{
+			return (camTransform->DistanceSquaredTo(lhs->GetTransform()->GetPosition()) > camTransform->DistanceSquaredTo(rhs->GetTransform()->GetPosition()));
+		});
+
+	for (auto& ghost : ghosts)
+	{
+		ghost->DrawTransparent(context.Get(), playerCamera);
+	}
+
+	context->OMSetBlendState(nullptr, 0, UINT_MAX);
+}
+
 
 // --------------------------------------------------------
 // Handle resizing DirectX "stuff" to match the new window size.
@@ -422,6 +565,32 @@ void Game::Update(float deltaTime, float totalTime)
 	entities[4]->GetTransform()->Rotate(0, 0,  offset*2.f);
 
 	playerCamera->UpdateViewMatrix();
+
+	if(ghostTransform->DistanceSquaredTo(route1[activeRoute]->GetTransform()->GetPosition()) > 1.001f) 
+	{
+		XMFLOAT3 routePos = route1[activeRoute]->GetTransform()->GetPosition();
+		XMFLOAT3 ghostPos = ghostTransform->GetPosition();
+		
+		XMVECTOR ghostPosSIMD = XMLoadFloat3(&ghostPos);
+		XMVECTOR routePosSIMD = XMLoadFloat3(&routePos);
+		XMVECTOR dir = XMVectorSubtract(routePosSIMD, ghostPosSIMD);
+		XMVECTOR dirNorm = XMVector3Normalize(dir);
+		dirNorm *= deltaTime * ghostSpeedBoost;
+		XMFLOAT3 dirFl;
+		XMStoreFloat3(&dirFl, dirNorm);		
+		ghostTransform->MoveAbsolute(dirFl.x, 0, dirFl.z);
+	}
+	else 
+	{
+		if(activeRoute >= 4) 
+		{
+			activeRoute = 0;
+		}
+		else 
+		{
+			activeRoute++;
+		}
+	}
 }
 
 // --------------------------------------------------------
@@ -462,6 +631,22 @@ void Game::Draw(float deltaTime, float totalTime)
 
 		entity->Draw(context.Get(), playerCamera);
 	}
+
+
+	if(bDrawWaypoints) 
+	{
+		route1[0]->GetMaterial()->GetPixelShader()->SetShader();
+		for(Entity* route : route1) 
+		{
+			route->DrawTransparent(context.Get(), playerCamera);
+		}
+		for (Entity* route : route2)
+		{
+			route->DrawTransparent(context.Get(), playerCamera);
+		}
+	}
+
+	SortAndRenderTransparentEntities();
 
 	// Present the back buffer to the user
 	//  - Puts the final frame we're drawing into the window so the user can see it

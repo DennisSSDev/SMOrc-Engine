@@ -20,7 +20,7 @@ public:
 	class Material* GetMaterial() const;
 
 	void Draw(struct ID3D11DeviceContext* context, class Camera* mainCamera);
-
+	void DrawTransparent(struct ID3D11DeviceContext* context, class Camera* mainCamera);
 private:
 	class Transform transform;
 	class Mesh* mesh;

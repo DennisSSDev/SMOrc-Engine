@@ -46,6 +46,13 @@ private:
 	class SimplePixelShader* normalPS = nullptr;
 	class SimpleVertexShader* normalVS = nullptr;
 
+	class SimplePixelShader* solidColorTransparentPS = nullptr;
+
+	/**
+	 * The current active blend state used for ghosts
+	 */
+	ID3D11BlendState* blendState = nullptr;
+
 	//texture stuff
 	ID3D11ShaderResourceView* srvBrick;
 	ID3D11ShaderResourceView* srvMetal;
@@ -55,9 +62,9 @@ private:
 	ID3D11ShaderResourceView* srvCushionNormal;
 	ID3D11SamplerState* textureSampler;
 
-	/*
-	Stealth Game Related textures go here
-	*/
+	/**
+	 * Stealth Game Related textures go here
+	 */
 	ID3D11ShaderResourceView* srvBlueprintDefault;
 	ID3D11ShaderResourceView* srvBlueprintOrange;
 	ID3D11ShaderResourceView* srvBlueprintBlue;
@@ -68,6 +75,20 @@ private:
 	std::vector<class Material*> materials;
 	std::vector<class Mesh*> meshes;
 
+	size_t activeRoute = 0;
+	float ghostSpeedBoost = 2.5f;
+	Transform* ghostTransform = nullptr;
+
+	std::vector<class Entity*> ghosts;
+
+	std::vector<class Entity*> route1;
+	std::vector<class Entity*> route2;
+
+	/**
+	 * DEBUG items
+	 */
+	bool bDrawWaypoints = false;
+
 	struct Light* lights = nullptr; // all the lights
 	int lightsInScene = 0;
 
@@ -75,5 +96,6 @@ private:
 
 protected:
 	virtual void BeginPlay();
+	virtual void SortAndRenderTransparentEntities();
 };
 
