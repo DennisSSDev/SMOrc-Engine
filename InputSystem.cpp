@@ -4,6 +4,7 @@ Date : 2019/10
 Description : InputSystem method definitions
 ----------------------------------------------*/
 #include "InputSystem.h"
+#include <cstdio>
 
 namespace Input {
 
@@ -35,6 +36,8 @@ namespace Input {
     void InputSystem::Frame(float dt, Camera* camera)
     {
         float speed = camera->GetMovementSpeed() * dt;
+        
+        GetKeyboardInput();
 
         // Act on user input:
         // - Iterate through all active keys
@@ -64,33 +67,34 @@ namespace Input {
                 std::pair<float, float> delta = this->GetMouseDelta();
 
                 float mouseSensitivity = camera->GetSensitivity();
-
                 delta.first *= mouseSensitivity * dt;
                 delta.second *= mouseSensitivity * dt;
-
                 
                 camera->GetTransform()->Rotate(delta.second, delta.first, 0.0f);
+
+                // Avoid mouse "lockback" by discarding current delta.
+                // We've already moved with it, so we don't want it to read Windows' snap back as false user input.
+                #ifndef DEBUG
+                mouseCurrent = mousePrevious;
+                #endif
                 break;
             }
             }
         }
         
-        GetInput();
+        UpdateMouseState();
     }
 
     // Stores previous/current keymappings (from windows)
     // Updates active keymap by comparing all chords 
     // Updates mouse mapping
-    void InputSystem::GetInput()
+    void InputSystem::GetKeyboardInput()
     {
         // Get the keyboard state from windows
         GetKeyboardState();
 
         // Update active/non-active keymaps
         UpdateKeymaps();
-
-        // Update mouse state
-        mousePrevious = mouseCurrent;
     }
 
     void InputSystem::OnMouseMove(short newX, short newY)
@@ -132,6 +136,11 @@ namespace Input {
             if (activeKey)
                 activeKeyMap.insert(std::pair<GameCommands, Chord*>(key.first, key.second));
         }
+    }
+
+    void InputSystem::UpdateMouseState()
+    {
+        mousePrevious = mouseCurrent;
     }
 
     // Stores the current state of the keyboard as 'previous'

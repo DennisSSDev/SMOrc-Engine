@@ -81,7 +81,7 @@ protected:
 	std::wstring GetFullPathTo_Wide(std::wstring relativeFilePath);
 
 	// Input System
-	Input::InputSystem* mInput;
+	Input::InputSystem* inputSystem;
 
 private:
 	// Timing related data

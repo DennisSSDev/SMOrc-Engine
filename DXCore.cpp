@@ -72,6 +72,7 @@ DXCore::~DXCore()
 	// we don't need to explicitly clean up those DirectX objects
 	// - If we weren't using smart pointers, we'd need
 	//   to call Release() on each DirectX object
+	delete inputSystem;
 }
 
 // --------------------------------------------------------
@@ -146,6 +147,11 @@ HRESULT DXCore::InitWindow()
 	// The window exists but is not visible yet
 	// We need to tell Windows to show it, and how to show it
 	ShowWindow(hWnd, SW_SHOW);
+
+	// Make cursor invisible (Release mode)
+	#ifndef DEBUG
+	ShowCursor(false);
+	#endif
 
 	// Return an "everything is ok" HRESULT value
 	return S_OK;
@@ -378,7 +384,7 @@ HRESULT DXCore::Run()
 	Init();
 
 	// After game is initialized, create an input system
-	mInput = new Input::InputSystem();
+	inputSystem = new Input::InputSystem();
 
 	// Our overall game and message loop
 	MSG msg = {};
@@ -398,6 +404,19 @@ HRESULT DXCore::Run()
 			UpdateTimer();
 			if(titleBarStats)
 				UpdateTitleBarStats();
+
+			#ifndef DEBUG
+			// Define screen center (in client coords)
+			POINT center;
+			center.x = this->width/2;
+			center.y = this->height/2;
+
+			// Convert to screen coordinates
+			ClientToScreen(this->hWnd, &center);
+
+			// Move cursor back to center
+			SetCursorPos(center.x, center.y);
+			#endif
 
 			// The game loop
 			Update(deltaTime, totalTime);
@@ -634,8 +653,8 @@ LRESULT DXCore::ProcessMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 	case WM_MOUSEMOVE:
 		POINTS pt = MAKEPOINTS(lParam);
 
-		if(mInput)
-			mInput->OnMouseMove(pt.x, pt.y);
+		if(inputSystem)
+			inputSystem->OnMouseMove(pt.x, pt.y);
 		return 0;
 
 	// This is the message that signifies the window closing

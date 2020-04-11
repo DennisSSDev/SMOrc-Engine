@@ -395,7 +395,7 @@ void Game::Update(float deltaTime, float totalTime)
 		Quit();
 
 	// Handle input
-	mInput->Frame(deltaTime, playerCamera);
+	inputSystem->Frame(deltaTime, playerCamera);
 
 	if(entities.size() == 0) 
 	{

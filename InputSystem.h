@@ -15,57 +15,60 @@ Description : Interface for the InputSystem class
 
 namespace Input {
     
-    class InputSystem
+class InputSystem
+{
+public:
+    InputSystem();
+    virtual ~InputSystem();
+
+    std::unordered_map<GameCommands, Chord*> activeKeyMap;
+
+    // Main "Update" method
+    void Frame(float dt, Camera* camera);
+
+    // On WM_MOUSEMOVE message, trigger this method
+    void OnMouseMove(short newX, short newY);
+
+    // Returns the current mouse position as a POINT
+    POINT GetMousePosition() const { return mouseCurrent; }
+
+    // Returns the difference between current and previous as a std::pair
+    std::pair<float, float> GetMouseDelta() const;
+
+private:
+    // Keyboard States
+    std::array<BYTE, 256> keyboardCurrent;
+    std::array<BYTE, 256> keyboardPrevious;
+
+    // Mouse States
+    POINT mouseCurrent;
+    POINT mousePrevious;
+
+    // returns the state of the key in enum form
+    const KeyState GetKeyboardKeyState(const unsigned int pkeyCode) const;
+
+    // returns true if the key is down
+    inline const bool isPressed(int pkeyCode) const
     {
-    private:
-        // Keyboard States
-        std::array<BYTE, 256> keyboardCurrent;
-        std::array<BYTE, 256> keyboardPrevious;
+        return (GetAsyncKeyState(pkeyCode) & 0x8000) ? 1 : 0;
+    }
+    
+    // Uses GetAsyncKeyState to read in 256 bytes
+    void GetKeyboardState();
 
-        // Mouse States
-        POINT mouseCurrent;
-        POINT mousePrevious;
+    // Clears Active Map, then populates it with new active keys
+    void UpdateKeymaps();
 
-        // Uses GetAsyncKeyState to read in 256 bytes
-        void GetKeyboardState();
+    // Curr = Prev
+    void UpdateMouseState();
+    
+    // Main "Update method" for input system
+    void GetKeyboardInput();
 
-        // returns the state of the key in enum form
-        const KeyState GetKeyboardKeyState(const unsigned int pkeyCode) const;
+protected:
+    std::unordered_map<GameCommands, Chord*> keyMap;
 
-        // returns true if the key is down
-        inline const bool isPressed(int pkeyCode) const
-        {
-            return (GetAsyncKeyState(pkeyCode) & 0x8000) ? 1 : 0;
-        }
-
-        void UpdateKeymaps();
-        
-        // Main "Update method" for input system
-        void GetInput();
-
-    protected:
-        std::unordered_map<GameCommands, Chord*> keyMap;
-
-        virtual void SetDefaultKeyMap();
-
-    public:
-        InputSystem();
-        virtual ~InputSystem();
-
-        std::unordered_map<GameCommands, Chord*> activeKeyMap;
-
-        // Main "Update" method
-        void Frame(float dt, Camera* camera);
-
-        // On WM_MOUSEMOVE message, trigger this method
-        void OnMouseMove(short newX, short newY);
-
-        // Returns the current mouse position as a POINT
-        POINT GetMousePosition() const { return mouseCurrent; }
-
-        // Returns the difference between current and previous as a std::pair
-        std::pair<float, float> GetMouseDelta() const;
-
-    };
+    virtual void SetDefaultKeyMap();
+};
 }
 #endif
