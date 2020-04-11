@@ -72,6 +72,7 @@ DXCore::~DXCore()
 	// we don't need to explicitly clean up those DirectX objects
 	// - If we weren't using smart pointers, we'd need
 	//   to call Release() on each DirectX object
+	delete mInput;
 }
 
 // --------------------------------------------------------
