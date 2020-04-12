@@ -13,7 +13,7 @@ class Entity
 {
 public:
 	Entity(class Mesh* incomingMesh, class Material* incomingMaterial);
-	~Entity() = default;
+	~Entity();
 
 	class Mesh* GetMesh() const;
 	class Transform* GetTransform();
@@ -22,7 +22,7 @@ public:
 	void Draw(struct ID3D11DeviceContext* context, class Camera* mainCamera);
 	void DrawTransparent(struct ID3D11DeviceContext* context, class Camera* mainCamera);
 private:
-	class Transform transform;
+	class Transform* transform;
 	class Mesh* mesh;
 	class Material* material;
 };

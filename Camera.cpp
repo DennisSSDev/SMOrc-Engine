@@ -48,3 +48,8 @@ void Camera::UpdateViewMatrix()
 
 	DirectX::XMStoreFloat4x4(&viewMatrix, lookToMatrix);
 }
+
+void Camera::DestroySelf()
+{
+	// @todo. Also consider making a class wrapper so that not the camera class inherits the Player interface
+}

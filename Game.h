@@ -4,6 +4,7 @@
 #include <wrl/client.h>
 #include <vector>
 #include "Lights.h"
+#include "PostProcessData.h"
 
 #define MAX_LIGHTS_IN_SCENE 128
 
@@ -18,6 +19,7 @@ class Camera;
 class Material;
 class SimplePixelShader;
 class SimpleVertexShader;
+class SimpleAI;
 
 class Game 
 	: public DXCore
@@ -38,6 +40,7 @@ private:
 	// Initialization helper methods
 	void LoadShaders(); 
 	void CreateBasicGeometry();
+	void ResizePostProcessResources();
 
 	// Shaders and shader-related constructs
 	class SimplePixelShader* pixelShader = nullptr;
@@ -49,7 +52,7 @@ private:
 	class SimplePixelShader* solidColorTransparentPS = nullptr;
 
 	/**
-	 * The current active blend state used for ghosts
+	 * The current active blend state used for ghostEntities
 	 */
 	ID3D11BlendState* blendState = nullptr;
 
@@ -75,11 +78,10 @@ private:
 	std::vector<class Material*> materials;
 	std::vector<class Mesh*> meshes;
 
-	size_t activeRoute = 0;
-	float ghostSpeedBoost = 2.5f;
-	Transform* ghostTransform = nullptr;
+	std::vector<class Entity*> ghostEntities;
 
-	std::vector<class Entity*> ghosts;
+	// requires a built entity to control
+	std::vector<class SimpleAI*> aiGhosts;
 
 	std::vector<class Entity*> route1;
 	std::vector<class Entity*> route2;
@@ -93,6 +95,14 @@ private:
 	int lightsInScene = 0;
 
 	class Camera* playerCamera = nullptr;
+
+	// Post processing resources
+	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> ppRTV;		// Allows us to render to a texture
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> ppSRV;		// Allows us to sample from the same texture
+	SimpleVertexShader* ppVS;
+	SimplePixelShader* ppPS;
+
+	struct VignetteData ppData;
 
 protected:
 	virtual void BeginPlay();

@@ -10,7 +10,12 @@ Entity::Entity(Mesh* incomingMesh, Material* incomingMaterial)
 {
 	mesh = incomingMesh;
 	material = incomingMaterial;
-	transform = Transform();
+	transform = new Transform();
+}
+
+Entity::~Entity()
+{
+	delete transform;
 }
 
 Mesh* Entity::GetMesh() const
@@ -20,7 +25,7 @@ Mesh* Entity::GetMesh() const
 
 Transform* Entity::GetTransform()
 {
-	return &transform;
+	return transform;
 }
 
 class Material* Entity::GetMaterial() const
@@ -37,7 +42,7 @@ void Entity::Draw(ID3D11DeviceContext* context, Camera* mainCamera)
 
 	// set the vertex shader data
 	vs->SetFloat4("colorTint",  material->GetColorTint());
-	vs->SetMatrix4x4("world", transform.GetWorldMatrix());
+	vs->SetMatrix4x4("world", transform->GetWorldMatrix());
 	vs->SetMatrix4x4("view", mainCamera->GetViewMatrix());
 	vs->SetMatrix4x4("proj", mainCamera->GetProjectionMatrix());
 	vs->CopyAllBufferData();
@@ -72,7 +77,7 @@ void Entity::DrawTransparent(struct ID3D11DeviceContext* context, class Camera* 
 	SimplePixelShader* ps = material->GetPixelShader();
 
 	// set the vertex shader data
-	vs->SetMatrix4x4("world", transform.GetWorldMatrix());
+	vs->SetMatrix4x4("world", transform->GetWorldMatrix());
 	vs->SetMatrix4x4("view", mainCamera->GetViewMatrix());
 	vs->SetMatrix4x4("proj", mainCamera->GetProjectionMatrix());
 	vs->CopyAllBufferData();

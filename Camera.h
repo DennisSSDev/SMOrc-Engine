@@ -3,11 +3,13 @@
 #include <Windows.h>
 #include <DirectXMath.h>
 #include "Transform.h"
+#include "PlayerInterface.h"
 
-class Camera 
+class Camera: public PlayerInterface 
 {
 public:
-	Camera(
+	Camera
+	(
 		DirectX::XMFLOAT3 initPosition = DirectX::XMFLOAT3(0,0,0), 
 		DirectX::XMFLOAT3 initRotation = DirectX::XMFLOAT3(0,0,0), 
 		float aspectRatio = 1920.f / 1080.f,
@@ -27,6 +29,9 @@ public:
 	inline Transform* GetTransform() { return &transform; }
 	inline float GetSensitivity() const { return mouseLookSpeed; }
 	inline float GetMovementSpeed() const { return movementSpeed; }
+
+	virtual void DestroySelf();
+
 private:
 	Transform transform;
 	DirectX::XMFLOAT4X4 viewMatrix;

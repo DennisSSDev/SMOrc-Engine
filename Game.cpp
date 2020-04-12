@@ -5,7 +5,9 @@
 #include "Camera.h"
 #include "Material.h"
 #include "SimpleShader.h"
+#include "SimpleAI.h"
 #include "WICTextureLoader.h"
+#include "PlayerInterface.h"
 #include <algorithm>
 #include <ppl.h>
 
@@ -79,9 +81,9 @@ Game::~Game()
 
 	parallel_for
 	(
-		size_t(0), ghosts.size(), [&](size_t i)
+		size_t(0), ghostEntities.size(), [&](size_t i)
 		{
-			delete ghosts[i];
+			delete ghostEntities[i];
 		},
 		static_partitioner()
 	);
@@ -100,6 +102,15 @@ Game::~Game()
 		size_t(0), route2.size(), [&](size_t i)
 		{
 			delete route2[i];
+		},
+		static_partitioner()
+	);
+
+	parallel_for
+	(
+		size_t(0), aiGhosts.size(), [&](size_t i)
+		{
+			delete aiGhosts[i];
 		},
 		static_partitioner()
 	);
@@ -131,6 +142,10 @@ Game::~Game()
 	delete solidColorTransparentPS;
 
 	delete[] lights;
+
+	delete ppVS;
+	
+	delete ppPS;
 }
 
 // --------------------------------------------------------
@@ -144,8 +159,6 @@ void Game::Init()
 	CreateBasicGeometry();
 
 	lights = new Light[MAX_LIGHTS_IN_SCENE];
-
-	playerCamera = new Camera(XMFLOAT3(0,0,-4.f), XMFLOAT3(0,0,0), (float)this->width / this->height);
 
 	// Tell the input assembler stage of the pipeline what kind of
 	// geometric primitives (points, lines or triangles) we want to draw.  
@@ -216,6 +229,12 @@ void Game::Init()
 	lights[lightsInScene].type = LIGHT_TYPE_AMBIENT;
 	lights[lightsInScene++].intensity = .1f;
 
+	ResizePostProcessResources();
+
+	ppData.opacity = .95f;
+	ppData.innerRadius = 0.4f;
+	ppData.outerRadius = .65f;
+	
 	// all the initialization for the engine has to be done prior to this. Now the game specific stuff needs to initialize
 	BeginPlay();
 }
@@ -230,6 +249,8 @@ void Game::Init()
 // --------------------------------------------------------
 void Game::LoadShaders()
 {
+	playerCamera = new Camera(XMFLOAT3(0, 0, -4.f), XMFLOAT3(0, 0, 0), (float)this->width / this->height);
+
 	vertexShader = new SimpleVertexShader(device.Get(), context.Get(), GetFullPathTo_Wide(L"VertexShader.cso").c_str());
 	pixelShader = new SimplePixelShader(device.Get(), context.Get(), GetFullPathTo_Wide(L"PixelShader.cso").c_str());
 
@@ -237,6 +258,16 @@ void Game::LoadShaders()
 	normalPS = new SimplePixelShader(device.Get(), context.Get(), GetFullPathTo_Wide(L"NormalMapPS.cso").c_str());
 
 	solidColorTransparentPS = new SimplePixelShader(device.Get(), context.Get(), GetFullPathTo_Wide(L"SolidColorTransparentShader.cso").c_str());
+
+	ppVS = new SimpleVertexShader(
+		device.Get(),
+		context.Get(),
+		GetFullPathTo_Wide(L"PostProcessVS.cso").c_str());
+
+	ppPS = new SimplePixelShader(
+		device.Get(),
+		context.Get(),
+		GetFullPathTo_Wide(L"VignettePS.cso").c_str());
 
 	// Make the blend state for basic alpha blending
 	D3D11_BLEND_DESC blendDesc = {};
@@ -405,8 +436,8 @@ void Game::CreateBasicGeometry()
 	entities.push_back(new Entity(meshes[10], materials[9]));
 
 	// Ghost
-	ghosts.push_back(new Entity(meshes[11], materials[10]));
-	ghosts.push_back(new Entity(meshes[11], materials[10]));
+	ghostEntities.push_back(new Entity(meshes[11], materials[10]));
+	ghostEntities.push_back(new Entity(meshes[11], materials[10]));
 
 	/**
 	 * The first route for the right side of the room
@@ -423,6 +454,9 @@ void Game::CreateBasicGeometry()
 	route2.push_back(new Entity(meshes[0], materials[11]));
 	route2.push_back(new Entity(meshes[0], materials[11]));
 	route2.push_back(new Entity(meshes[0], materials[11]));
+
+	aiGhosts.push_back(new SimpleAI(playerCamera, &route1[0], ghostEntities[0]));
+	aiGhosts.push_back(new SimpleAI(playerCamera, &route2[0], ghostEntities[1]));
 
 	
 	bDrawWaypoints = true;
@@ -456,9 +490,8 @@ void Game::BeginPlay()
 
 	entities[10]->GetTransform()->MoveAbsolute(-6,.5f,-34);
 
-	ghosts[0]->GetTransform()->MoveAbsolute(-6.f, .5f, -30.f);
-	ghosts[1]->GetTransform()->MoveAbsolute(-3.f,.5f, -24.f);
-	ghostTransform = ghosts[0]->GetTransform();
+	ghostEntities[0]->GetTransform()->MoveAbsolute(-6.f, .5f, -30.f);
+	ghostEntities[1]->GetTransform()->MoveAbsolute(-3.f,.5f, -24.f);
 	
 	route1[0]->GetTransform()->MoveAbsolute(-8.5f, 1.5f, -35.f);
 	route1[0]->GetTransform()->SetScale(.25f, .25f, .25f);
@@ -491,22 +524,21 @@ void Game::BeginPlay()
 	route2[4]->GetTransform()->SetScale(.25f, .25f, .25f);
 }
 
-// ghosts are all transparent
-
+// ghostEntities are all transparent
 void Game::SortAndRenderTransparentEntities()
 {
-	ghosts[0]->GetMaterial()->GetVertexShader()->SetShader();
-	ghosts[0]->GetMaterial()->GetPixelShader()->SetShader();
+	ghostEntities[0]->GetMaterial()->GetVertexShader()->SetShader();
+	ghostEntities[0]->GetMaterial()->GetPixelShader()->SetShader();
 	// Turn on the blend state
 	context->OMSetBlendState(blendState, 0, UINT_MAX);
 
 	auto camTransform = playerCamera->GetTransform();
-	std::sort(ghosts.begin(), ghosts.end(), [&](const auto& lhs, const auto& rhs)
+	std::sort(ghostEntities.begin(), ghostEntities.end(), [&](const auto& lhs, const auto& rhs)
 		{
 			return (camTransform->DistanceSquaredTo(lhs->GetTransform()->GetPosition()) > camTransform->DistanceSquaredTo(rhs->GetTransform()->GetPosition()));
 		});
 
-	for (auto& ghost : ghosts)
+	for (auto& ghost : ghostEntities)
 	{
 		ghost->DrawTransparent(context.Get(), playerCamera);
 	}
@@ -526,6 +558,7 @@ void Game::OnResize()
 	if(!playerCamera)
 		return;
 	playerCamera->UpdateProjectionMatrix((float)this->width / this->height);
+	ResizePostProcessResources();
 }
 
 // --------------------------------------------------------
@@ -564,33 +597,12 @@ void Game::Update(float deltaTime, float totalTime)
 
 	entities[4]->GetTransform()->Rotate(0, 0,  offset*2.f);
 
-	playerCamera->UpdateViewMatrix();
+	for (SimpleAI* ai : aiGhosts)
+	{
+		ai->Update(deltaTime);
+	}
 
-	if(ghostTransform->DistanceSquaredTo(route1[activeRoute]->GetTransform()->GetPosition()) > 1.001f) 
-	{
-		XMFLOAT3 routePos = route1[activeRoute]->GetTransform()->GetPosition();
-		XMFLOAT3 ghostPos = ghostTransform->GetPosition();
-		
-		XMVECTOR ghostPosSIMD = XMLoadFloat3(&ghostPos);
-		XMVECTOR routePosSIMD = XMLoadFloat3(&routePos);
-		XMVECTOR dir = XMVectorSubtract(routePosSIMD, ghostPosSIMD);
-		XMVECTOR dirNorm = XMVector3Normalize(dir);
-		dirNorm *= deltaTime * ghostSpeedBoost;
-		XMFLOAT3 dirFl;
-		XMStoreFloat3(&dirFl, dirNorm);		
-		ghostTransform->MoveAbsolute(dirFl.x, 0, dirFl.z);
-	}
-	else 
-	{
-		if(activeRoute >= 4) 
-		{
-			activeRoute = 0;
-		}
-		else 
-		{
-			activeRoute++;
-		}
-	}
+	playerCamera->UpdateViewMatrix();
 }
 
 // --------------------------------------------------------
@@ -610,6 +622,15 @@ void Game::Draw(float deltaTime, float totalTime)
 		D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
 		1.0f,
 		0);
+
+	// Clear post process target too
+	context->ClearRenderTargetView(ppRTV.Get(), color);
+	
+	// --- Post Processing - Pre-Draw ---------------------
+	{
+		// Change the render target
+		context->OMSetRenderTargets(1, ppRTV.GetAddressOf(), depthStencilView.Get());
+	}
 
 	// since they are all shared we don't need to individually set it per entity
 	normalPS->SetData("lights", (void*)(lights), sizeof(Light) * lightsInScene);
@@ -648,6 +669,40 @@ void Game::Draw(float deltaTime, float totalTime)
 
 	SortAndRenderTransparentEntities();
 
+	// --- Post processing - Post-Draw -----------------------
+	{
+		context->OMSetRenderTargets(1, backBufferRTV.GetAddressOf(), 0);
+
+		// Set up post process shaders
+		ppVS->SetShader();
+
+		ppPS->SetShaderResourceView("pixels", ppSRV.Get());
+		ppPS->SetSamplerState("samplerOptions", textureSampler);
+		ppPS->SetShader();
+
+		ppData.ppgData.width = 1.f / width;
+		ppData.ppgData.height = 1.f / height;
+		ppPS->SetData("vignetteData", (void*)&ppData, sizeof(VignetteData));
+		ppPS->CopyAllBufferData();
+
+		// Turn OFF vertex and index buffers
+		UINT stride = sizeof(Vertex);
+		UINT offset = 0;
+		ID3D11Buffer* nothing = 0;
+		context->IASetIndexBuffer(0, DXGI_FORMAT_R32_UINT, 0);
+		context->IASetVertexBuffers(0, 1, &nothing, &stride, &offset);
+
+		// Draw exactly 3 vertices for our "full screen triangle"
+		context->Draw(3, 0);
+
+
+		// Unbind shader resource views at the end of the frame,
+		// since we'll be rendering into one of those textures
+		// at the start of the next
+		ID3D11ShaderResourceView* nullSRVs[16] = {};
+		context->PSSetShaderResources(0, 16, nullSRVs);
+	}
+
 	// Present the back buffer to the user
 	//  - Puts the final frame we're drawing into the window so the user can see it
 	//  - Do this exactly ONCE PER FRAME (always at the very end of the frame)
@@ -656,4 +711,43 @@ void Game::Draw(float deltaTime, float totalTime)
 	// Due to the usage of a more sophisticated swap chain,
 	// the render target must be re-bound after every call to Present()
 	context->OMSetRenderTargets(1, backBufferRTV.GetAddressOf(), depthStencilView.Get());
+}
+
+void Game::ResizePostProcessResources()
+{
+	D3D11_TEXTURE2D_DESC textureDesc = {};
+	textureDesc.Width = width;
+	textureDesc.Height = height;
+	textureDesc.ArraySize = 1;
+	textureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE; // Will render to it and sample from it!
+	textureDesc.CPUAccessFlags = 0;
+	textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	textureDesc.MipLevels = 1;
+	textureDesc.MiscFlags = 0;
+	textureDesc.SampleDesc.Count = 1;
+	textureDesc.SampleDesc.Quality = 0;
+	textureDesc.Usage = D3D11_USAGE_DEFAULT;
+
+	ID3D11Texture2D* ppTexture;
+	device->CreateTexture2D(&textureDesc, 0, &ppTexture);
+
+	// Create the Render Target View
+	D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+	rtvDesc.Format = textureDesc.Format;
+	rtvDesc.Texture2D.MipSlice = 0;
+	rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+
+	device->CreateRenderTargetView(ppTexture, &rtvDesc, ppRTV.ReleaseAndGetAddressOf());
+
+	// Create the Shader Resource View
+	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Format = textureDesc.Format;
+	srvDesc.Texture2D.MipLevels = 1;
+	srvDesc.Texture2D.MostDetailedMip = 0;
+	srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+
+	device->CreateShaderResourceView(ppTexture, &srvDesc, ppSRV.ReleaseAndGetAddressOf());
+
+	// We don't need the texture reference itself no mo'
+	ppTexture->Release();
 }
