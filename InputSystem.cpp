@@ -39,6 +39,9 @@ namespace Input {
         
         GetKeyboardInput();
 
+        // Camera references
+        Transform* playerTransform = camera->GetTransform();
+
         // Act on user input:
         // - Iterate through all active keys
         // - Check for commands corresponding to activated chords
@@ -70,7 +73,8 @@ namespace Input {
                 delta.first *= mouseSensitivity * dt;
                 delta.second *= mouseSensitivity * dt;
                 
-                camera->GetTransform()->Rotate(delta.second, delta.first, 0.0f);
+                // Rotate Camera based on mouse coord delta
+                playerTransform->Rotate(delta.second, delta.first, 0.0f);
 
                 // Avoid mouse "lockback" by discarding current delta.
                 // We've already moved with it, so we don't want it to read Windows' snap back as false user input.
@@ -81,6 +85,10 @@ namespace Input {
             }
             }
         }
+
+        // Lock player movement to the floor
+        DirectX::XMFLOAT3 currPos = playerTransform->GetPosition();
+        playerTransform->SetPosition(currPos.x, 2.1f, currPos.z);
         
         UpdateMouseState();
     }

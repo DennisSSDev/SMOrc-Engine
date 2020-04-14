@@ -249,7 +249,7 @@ void Game::Init()
 // --------------------------------------------------------
 void Game::LoadShaders()
 {
-	playerCamera = new Camera(XMFLOAT3(0, 0, -4.f), XMFLOAT3(0, 0, 0), (float)this->width / this->height);
+	playerCamera = new Camera(XMFLOAT3(-5.1f, 2.1f, 5.0f), XMFLOAT3(0, XM_PI, 0), (float)this->width / this->height);
 
 	vertexShader = new SimpleVertexShader(device.Get(), context.Get(), GetFullPathTo_Wide(L"VertexShader.cso").c_str());
 	pixelShader = new SimplePixelShader(device.Get(), context.Get(), GetFullPathTo_Wide(L"PixelShader.cso").c_str());
