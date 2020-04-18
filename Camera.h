@@ -26,7 +26,7 @@ public:
 
 	inline DirectX::XMFLOAT4X4 GetProjectionMatrix() const { return projMatrix; };
 	inline DirectX::XMFLOAT4X4 GetViewMatrix() const { return viewMatrix; };
-	inline Transform* GetTransform() { return &transform; }
+	inline Transform* GetTransform() override { return &transform; }
 	inline float GetSensitivity() const { return mouseLookSpeed; }
 	inline float GetMovementSpeed() const { return movementSpeed; }
 

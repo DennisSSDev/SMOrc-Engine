@@ -1,6 +1,7 @@
 #pragma once
 
 class Entity;
+class Transform;
 class PlayerInterface;
 
 enum class AI_State: unsigned char
@@ -21,7 +22,10 @@ public:
 
 private:
 	void ExecutePatrolPath(float deltaTime);
-	void ExecuteAttackPlayer();
+	void ExecuteAttackPlayer(float deltaTime);
+
+	// Helper method for movement operations towards another transform
+	void AIMoveTowards(Transform* pTarget, float deltaTime);
 
 	class Entity** targetPath = nullptr;
 	class PlayerInterface* player = nullptr;

@@ -24,6 +24,11 @@ void SimpleAI::Update(float deltaTime)
 	case AI_State::PATROL_PATH:
 		ExecutePatrolPath(deltaTime);
 		break;
+
+	case AI_State::ATTACK_PLAYER:
+		ExecuteAttackPlayer(deltaTime);
+		break;
+
 	default:
 		break;
 	}
@@ -35,17 +40,7 @@ void SimpleAI::ExecutePatrolPath(float deltaTime)
 	Entity* activePath = targetPath[activeRoute];
 	if (ghostTransform->DistanceSquaredTo(activePath->GetTransform()->GetPosition()) > 1.001f)
 	{
-		XMFLOAT3 routePos = activePath->GetTransform()->GetPosition();
-		XMFLOAT3 ghostPos = ghostTransform->GetPosition();
-
-		XMVECTOR ghostPosSIMD = XMLoadFloat3(&ghostPos);
-		XMVECTOR routePosSIMD = XMLoadFloat3(&routePos);
-		XMVECTOR dir = XMVectorSubtract(routePosSIMD, ghostPosSIMD);
-		XMVECTOR dirNorm = XMVector3Normalize(dir);
-		dirNorm *= deltaTime * ghostSpeedBoost;
-		XMFLOAT3 dirFl;
-		XMStoreFloat3(&dirFl, dirNorm);
-		ghostTransform->MoveAbsolute(dirFl.x, 0, dirFl.z);
+		AIMoveTowards(activePath->GetTransform(), deltaTime);
 
 		// @todo one day we will make them face the target that they want to attack.
 		// XMVECTOR ghostQuat = XMQuaternionRotationRollPitchYawFromVector(XMLoadFloat3(&ghostTransform->GetPitchYawRoll()));
@@ -63,8 +58,33 @@ void SimpleAI::ExecutePatrolPath(float deltaTime)
 	}
 }
 
-void SimpleAI::ExecuteAttackPlayer()
+// Behavior for following the player
+void SimpleAI::ExecuteAttackPlayer(float deltaTime)
 {
-	// @todo
+	AIMoveTowards(player->GetTransform(), deltaTime);
+
+	// @todo check if hit player, if so, send signal to end game
+}
+
+void SimpleAI::AIMoveTowards(Transform* pTarget, float deltaTime)
+{
+	// References to both transforms
+	Transform* ghostTransform = self->GetTransform();
+
+	// Both positions as XMVECTOR
+	XMVECTOR targetPos = XMLoadFloat3(&pTarget->GetPosition());
+	XMVECTOR ghostPos = XMLoadFloat3(&ghostTransform->GetPosition());
+	
+	// SIMD operations
+	XMVECTOR dir = XMVectorSubtract(targetPos, ghostPos);
+	XMVECTOR dirNorm = XMVector3Normalize(dir);
+
+	// Adjust relative to deltaTime
+	dirNorm *= deltaTime * ghostSpeedBoost;
+	
+	// Call Transform movement method
+	XMFLOAT3 dirFl;
+	XMStoreFloat3(&dirFl, dirNorm);
+	ghostTransform->MoveAbsolute(dirFl.x, 0, dirFl.z);
 }
 
