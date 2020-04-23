@@ -10,8 +10,10 @@
 #include "PlayerInterface.h"
 #include <algorithm>
 #include <ppl.h>
+#include <iostream>
 
 using namespace Concurrency;
+using namespace std;
 
 // Needed for a helper function to read compiled shader files from the hard drive
 #pragma comment(lib, "d3dcompiler.lib")
@@ -232,8 +234,8 @@ void Game::Init()
 	ResizePostProcessResources();
 
 	ppData.opacity = .95f;
-	ppData.innerRadius = 0.4f;
-	ppData.outerRadius = .65f;
+	ppData.innerRadius = 0.2f;
+	ppData.outerRadius = .6f;
 	
 	// all the initialization for the engine has to be done prior to this. Now the game specific stuff needs to initialize
 	BeginPlay();
@@ -603,6 +605,8 @@ void Game::Update(float deltaTime, float totalTime)
 	}
 
 	playerCamera->UpdateViewMatrix();
+
+	CalculateVignette();
 }
 
 // --------------------------------------------------------
@@ -750,4 +754,46 @@ void Game::ResizePostProcessResources()
 
 	// We don't need the texture reference itself no mo'
 	ppTexture->Release();
+}
+
+// --------------------------------------------------------
+// Calculate the vignette opacity and pass to post processing
+// --------------------------------------------------------
+void Game::CalculateVignette()
+{
+	// For each light in the scene
+	for (int i = 0; i < lightsInScene; i++)
+	{
+		// Filter - only point lights
+		if (lights[i].type == 1)
+		{
+			// Calculate distance between light and camera
+			float currentDistance = playerCamera->GetTransform()->DistanceSquaredTo(lights[i].position);
+
+			// If this is the closest light so far
+			if (currentDistance < closestLightDistance)
+			{
+				// Save it's data
+				closestLightIndex = i;
+				closestLightDistance = currentDistance;
+			}
+		}
+	}
+
+	// If the player is too far away from the closest light
+	if (closestLightDistance >= darknessDistance)
+	{
+		// Darkest vignette
+		ppData.opacity = .95f;
+	}
+	// Otherwise player is close enough to light
+	else
+	{
+		// Adjust opacity based on distance
+		ppData.opacity = (closestLightDistance / darknessDistance) - .05f;
+	}
+
+	// Reset vignette variables
+	closestLightIndex = 0;
+	closestLightDistance = 6.f * 6.f;
 }

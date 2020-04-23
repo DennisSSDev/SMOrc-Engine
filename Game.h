@@ -102,10 +102,14 @@ private:
 	SimpleVertexShader* ppVS;
 	SimplePixelShader* ppPS;
 
+	// Vignette variables
 	struct VignetteData ppData;
+	float darknessDistance = 5.5f * 5.5f;
+	float closestLightDistance = 6.f * 6.f;
+	int closestLightIndex = 0;
 
 protected:
 	virtual void BeginPlay();
 	virtual void SortAndRenderTransparentEntities();
+	void CalculateVignette();
 };
-
