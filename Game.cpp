@@ -601,7 +601,7 @@ void Game::Update(float deltaTime, float totalTime)
 
 	for (SimpleAI* ai : aiGhosts)
 	{
-		ai->Update(deltaTime);
+		ai->Update(inLight, deltaTime);
 	}
 
 	playerCamera->UpdateViewMatrix();

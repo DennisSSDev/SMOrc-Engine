@@ -4,6 +4,8 @@
 #include "Entity.h"
 #include <DirectXMath.h>
 
+#include <cstdio>
+
 using namespace DirectX;
 
 SimpleAI::SimpleAI(class PlayerInterface* pPlayer, class Entity** path, class Entity* pSelf)
@@ -13,12 +15,14 @@ SimpleAI::SimpleAI(class PlayerInterface* pPlayer, class Entity** path, class En
 	self = pSelf;
 	maxRouteCount = 4;
 	activeRoute = 0;
-	ghostSpeedBoost = 5.f;
+	ghostSpeedBoost = 3.f;
 	state = AI_State::PATROL_PATH;
 }
 
-void SimpleAI::Update(float deltaTime)
+void SimpleAI::Update(bool inLight, float deltaTime)
 {
+	UpdateState(inLight);
+
 	switch(state)
 	{
 	case AI_State::PATROL_PATH:
@@ -66,9 +70,45 @@ void SimpleAI::ExecuteAttackPlayer(float deltaTime)
 	// @todo check if hit player, if so, send signal to end game
 }
 
+void SimpleAI::UpdateState(bool playerInLight)
+{	
+	// @note: the ghost's visibility range could be implemented as a member, 
+	// but this is only useful if we want to vary the ghost's vision range
+	const float sqLightRange = 9.0f * 9.0f;
+	const float sqDarkRange  = 6.0f * 6.0f;
+
+	// squared distance to player
+	float sqDist = self->GetTransform()->DistanceSquaredTo(player->GetTransform()->GetPosition());
+	
+	float range = -1.0f;
+	// Ghosts can see farther if player is in light
+	if (playerInLight)
+		range = sqLightRange;
+	else
+		range = sqDarkRange;
+
+	if (sqDist < range) // Player spotted
+	{
+		#ifdef DEBUG // State has changed from passive->attacking
+		if(state == AI_State::PATROL_PATH)
+			printf("Attack %d!\n", playerInLight);
+		#endif
+		
+		SetState(AI_State::ATTACK_PLAYER);
+	}
+	else // Player lost
+	{
+		#ifdef DEBUG // State has changed from attacking->passive
+		if(state == AI_State::ATTACK_PLAYER)
+			printf("Back to work.\n");
+		#endif
+
+		SetState(AI_State::PATROL_PATH);
+	}
+}
+
 void SimpleAI::AIMoveTowards(Transform* pTarget, float deltaTime)
 {
-	// References to both transforms
 	Transform* ghostTransform = self->GetTransform();
 
 	// Both positions as XMVECTOR

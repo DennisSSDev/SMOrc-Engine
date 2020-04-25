@@ -18,11 +18,14 @@ public:
 	~SimpleAI() = default;
 
 	inline void SetState(AI_State pState) {state = pState;}
-	virtual void Update(float deltaTime);
+	virtual void Update(bool playerInLight, float deltaTime);
 
 private:
 	void ExecutePatrolPath(float deltaTime);
 	void ExecuteAttackPlayer(float deltaTime);
+
+	// Updates the internal AI_State based on player distance
+	void UpdateState(bool inLight);
 
 	// Helper method for movement operations towards another transform
 	void AIMoveTowards(Transform* pTarget, float deltaTime);
