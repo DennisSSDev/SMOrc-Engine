@@ -42,6 +42,9 @@ private:
 	void CreateBasicGeometry();
 	void ResizePostProcessResources();
 
+	// AI helpers
+	bool PlayerInLight(_Out_ float* sqDist, _Out_ int* lightType, _Out_ float* sqLightRange);
+
 	// Shaders and shader-related constructs
 	class SimplePixelShader* pixelShader = nullptr;
 	class SimpleVertexShader* vertexShader = nullptr;
@@ -104,12 +107,9 @@ private:
 
 	// Vignette variables
 	struct VignetteData ppData;
-	float darknessDistance = 5.5f * 5.5f;
-	float closestLightDistance = 6.f * 6.f;
-	int closestLightIndex = 0;
 
 protected:
 	virtual void BeginPlay();
 	virtual void SortAndRenderTransparentEntities();
-	void CalculateVignette();
+	void CalculateVignette(bool inLight, float sqDist, int lightType, float lightRange);
 };

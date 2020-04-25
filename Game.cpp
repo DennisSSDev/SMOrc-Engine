@@ -598,15 +598,20 @@ void Game::Update(float deltaTime, float totalTime)
 	entities[3]->GetTransform()->Rotate(-1.5f * deltaTime, 0, 0);
 
 	entities[4]->GetTransform()->Rotate(0, 0,  offset*2.f);
-
+	
+	// Vignette Calculation
+	float	distToLight;
+	int		lightType;
+	float	lightRange;
+	bool	inLight = PlayerInLight(&distToLight, &lightType, &lightRange);
+	CalculateVignette(inLight, distToLight, lightType, lightRange);
+	
 	for (SimpleAI* ai : aiGhosts)
 	{
 		ai->Update(inLight, deltaTime);
 	}
 
 	playerCamera->UpdateViewMatrix();
-
-	CalculateVignette();
 }
 
 // --------------------------------------------------------
@@ -759,41 +764,46 @@ void Game::ResizePostProcessResources()
 // --------------------------------------------------------
 // Calculate the vignette opacity and pass to post processing
 // --------------------------------------------------------
-void Game::CalculateVignette()
+void Game::CalculateVignette(bool inLight, float sqDist, int lightType, float lightRange)
 {
-	// For each light in the scene
-	for (int i = 0; i < lightsInScene; i++)
+	// Only point lights affect vignette
+	if (!inLight || lightType != LIGHT_TYPE_POINT)
 	{
-		// Filter - only point lights
-		if (lights[i].type == 1)
-		{
-			// Calculate distance between light and camera
-			float currentDistance = playerCamera->GetTransform()->DistanceSquaredTo(lights[i].position);
+		ppData.opacity = .95f;
+		return;
+	}
 
-			// If this is the closest light so far
-			if (currentDistance < closestLightDistance)
-			{
-				// Save it's data
-				closestLightIndex = i;
-				closestLightDistance = currentDistance;
-			}
+	// Calculate vignette based on light range
+	ppData.opacity = (sqDist / lightRange) - .05f;
+}
+
+// --------------------------------------------------------
+// Iterate through all lights, and return information about
+// any lights the player is standing in.
+// --------------------------------------------------------
+bool Game::PlayerInLight(_Out_ float* _sqDist, _Out_ int* _lightType, _Out_ float* _sqLightRange)
+{
+	// Return true if player is within the range of any light
+	for (int i = 0; i < lightsInScene; ++i)
+	{
+		float SqLightRange = lights[i].range * lights[i].range;
+		XMFLOAT3 lightPos = lights[i].position;
+		float sqDistToLight = playerCamera->GetTransform()->DistanceSquaredTo(lightPos);
+
+		if (sqDistToLight < SqLightRange)
+		{
+			// If in light range, return light type and distance to light thru params
+			// some processes like vignette need this info
+			*_sqDist = sqDistToLight;
+			*_lightType = lights[i].type;
+			*_sqLightRange = SqLightRange;
+			return true;
 		}
 	}
+	// If false, return clearly invalid values to each 
+	*_sqDist = -1.0f;
+	*_lightType = -1;
+	*_sqLightRange = -1.0f;
 
-	// If the player is too far away from the closest light
-	if (closestLightDistance >= darknessDistance)
-	{
-		// Darkest vignette
-		ppData.opacity = .95f;
-	}
-	// Otherwise player is close enough to light
-	else
-	{
-		// Adjust opacity based on distance
-		ppData.opacity = (closestLightDistance / darknessDistance) - .05f;
-	}
-
-	// Reset vignette variables
-	closestLightIndex = 0;
-	closestLightDistance = 6.f * 6.f;
+	return false;
 }
