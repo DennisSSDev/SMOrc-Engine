@@ -1,5 +1,7 @@
 #pragma once
 
+#include <DirectXMath.h>
+
 class Entity;
 class Transform;
 class PlayerInterface;
@@ -13,6 +15,10 @@ enum class AI_State: unsigned char
 
 class SimpleAI 
 {
+	// Color tint constants
+	const DirectX::XMFLOAT4 AttackColor = DirectX::XMFLOAT4(1.f, .1f, .1f, .5f);
+	const DirectX::XMFLOAT4 PatrolColor = DirectX::XMFLOAT4(.1f, .1f, 1.f, .5f);
+
 public:
 	SimpleAI(class PlayerInterface* pPlayer, class Entity** path, class Entity* pSelf);
 	~SimpleAI() = default;

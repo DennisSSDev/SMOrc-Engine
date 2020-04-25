@@ -2,7 +2,7 @@
 #include "PlayerInterface.h"
 #include "Transform.h"
 #include "Entity.h"
-#include <DirectXMath.h>
+#include "Material.h"
 
 #include <cstdio>
 
@@ -89,19 +89,17 @@ void SimpleAI::UpdateState(bool playerInLight)
 
 	if (sqDist < range) // Player spotted
 	{
-		#ifdef DEBUG // State has changed from passive->attacking
-		if(state == AI_State::PATROL_PATH)
-			printf("Attack %d!\n", playerInLight);
-		#endif
-		
+		// State has changed from passive->attacking
+		if (state == AI_State::PATROL_PATH)
+			self->GetMaterial()->SetColorTint(AttackColor);
+			
 		SetState(AI_State::ATTACK_PLAYER);
 	}
 	else // Player lost
 	{
-		#ifdef DEBUG // State has changed from attacking->passive
-		if(state == AI_State::ATTACK_PLAYER)
-			printf("Back to work.\n");
-		#endif
+		// State has changed from attacking->passive
+		if (state == AI_State::ATTACK_PLAYER)
+			self->GetMaterial()->SetColorTint(PatrolColor);
 
 		SetState(AI_State::PATROL_PATH);
 	}

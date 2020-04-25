@@ -408,7 +408,7 @@ void Game::CreateBasicGeometry()
 	materials.push_back(new Material(XMFLOAT4(1.f, 1.f, 1.f, 1.f), 0.f, srvBlueprintGreen, textureSampler, vertexShader, pixelShader));
 
 	// transparent material
-	materials.push_back(new Material(XMFLOAT4(1.f, .1f, .1f, .5f), 0.f, vertexShader, solidColorTransparentPS));
+	materials.push_back(new Material(XMFLOAT4(.1f, .1f, 1.f, .5f), 0.f, vertexShader, solidColorTransparentPS));
 
 	materials.push_back(new Material(XMFLOAT4(1.f, 1.f, 0.f, 1.f), 0.f, vertexShader, solidColorTransparentPS));
 
