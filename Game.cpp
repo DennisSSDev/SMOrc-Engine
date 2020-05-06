@@ -621,9 +621,9 @@ void Game::Update(float deltaTime, float totalTime)
 
 	lights[0].position = aiGhosts[0]->self->GetTransform()->GetPosition();
 	lights[0].position.y = 1.5f;
-
+	
 	lights[1].position = aiGhosts[1]->self->GetTransform()->GetPosition();
-	lights[1].position.y = 1.5f;
+	lights[1].position.y = 1.5f;	
 
 	playerCamera->UpdateViewMatrix();
 }

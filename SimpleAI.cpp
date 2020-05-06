@@ -108,6 +108,7 @@ void SimpleAI::UpdateState(bool playerInLight)
 void SimpleAI::AIMoveTowards(Transform* pTarget, float deltaTime)
 {
 	Transform* ghostTransform = self->GetTransform();
+	float speed = 0.1f;
 
 	// Both positions as XMVECTOR
 	XMVECTOR targetPos = XMLoadFloat3(&pTarget->GetPosition());
@@ -124,5 +125,8 @@ void SimpleAI::AIMoveTowards(Transform* pTarget, float deltaTime)
 	XMFLOAT3 dirFl;
 	XMStoreFloat3(&dirFl, dirNorm);
 	ghostTransform->MoveAbsolute(dirFl.x, 0, dirFl.z);
+
+	// Rotate ghost over time
+	ghostTransform->Rotate(0.f, (3.14f / 180) * speed, 0.f);
 }
 
