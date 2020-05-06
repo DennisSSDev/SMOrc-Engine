@@ -26,6 +26,8 @@ public:
 	inline void SetState(AI_State pState) {state = pState;}
 	virtual void Update(bool playerInLight, float deltaTime);
 
+	class Entity* self = nullptr;
+
 private:
 	void ExecutePatrolPath(float deltaTime);
 	void ExecuteAttackPlayer(float deltaTime);
@@ -38,8 +40,7 @@ private:
 
 	class Entity** targetPath = nullptr;
 	class PlayerInterface* player = nullptr;
-	class Entity* self = nullptr;
-
+	
 	AI_State state = AI_State::DEFAULT;
 	size_t activeRoute;
 	size_t maxRouteCount;

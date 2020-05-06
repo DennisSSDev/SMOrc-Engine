@@ -173,11 +173,19 @@ void Game::Init()
 
 	lights[lightsInScene].color = XMFLOAT3(1.0f, 0.2f, 0.2f);
 	lights[lightsInScene].type = LIGHT_TYPE_SPOT;
-	lights[lightsInScene].direction = XMFLOAT3(0.f, 1.f, 0.f);
-	lights[lightsInScene].range = 4.f;
-	lights[lightsInScene].intensity = 1.f;
+	lights[lightsInScene].direction = XMFLOAT3(0.f, 0.f, -1.f);
+	lights[lightsInScene].range = 15.f;
+	lights[lightsInScene].intensity = 5.f;
 	lights[lightsInScene].spotFalloff = 25.f;
-	lights[lightsInScene++].position = XMFLOAT3(-4.5f, 2.5f, -34.5f);
+	lights[lightsInScene++].position = XMFLOAT3(-4.5f, 3.f, -34.5f);
+
+	lights[lightsInScene].color = XMFLOAT3(1.0f, 0.2f, 0.2f);
+	lights[lightsInScene].type = LIGHT_TYPE_SPOT;
+	lights[lightsInScene].direction = XMFLOAT3(0.f, 0.f, -1.f);
+	lights[lightsInScene].range = 15.f;
+	lights[lightsInScene].intensity = 5.f;
+	lights[lightsInScene].spotFalloff = 25.f;
+	lights[lightsInScene++].position = XMFLOAT3(-3.f, .5f, -24.f);
 
 	lights[lightsInScene].color = XMFLOAT3(.65f, .2f, .3f);
 	lights[lightsInScene].type = LIGHT_TYPE_POINT;
@@ -601,7 +609,7 @@ void Game::Update(float deltaTime, float totalTime)
 	
 	// Vignette Calculation
 	float	distToLight;
-	int		lightType;
+	int	lightType;
 	float	lightRange;
 	bool	inLight = PlayerInLight(&distToLight, &lightType, &lightRange);
 	CalculateVignette(inLight, distToLight, lightType, lightRange);
@@ -610,6 +618,12 @@ void Game::Update(float deltaTime, float totalTime)
 	{
 		ai->Update(inLight, deltaTime);
 	}
+
+	lights[0].position = aiGhosts[0]->self->GetTransform()->GetPosition();
+	lights[0].position.y = 1.5f;
+
+	lights[1].position = aiGhosts[1]->self->GetTransform()->GetPosition();
+	lights[1].position.y = 1.5f;
 
 	playerCamera->UpdateViewMatrix();
 }
